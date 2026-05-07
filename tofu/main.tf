@@ -155,6 +155,9 @@ locals {
     "my-homepage"     = ["fzt-downstream"]
   }
   app_pages_branch = {}
+  extra_graph_app_role_values = {
+    "tank-operator" = toset(["AppRoleAssignment.ReadWrite.All"])
+  }
 }
 
 resource "random_password" "card_utility_stats_vm_admin" {
@@ -271,18 +274,19 @@ module "app" {
     "tank-operator",
   ])
 
-  name                       = each.key
-  ci_only                    = contains(local.ci_only_apps, each.key)
-  default_branch             = lookup(local.app_default_branch, each.key, "main")
-  topics                     = lookup(local.app_topics, each.key, [])
-  pages_branch               = lookup(local.app_pages_branch, each.key, "")
-  key_vault_name             = data.azurerm_key_vault.main.name
-  key_vault_id               = data.azurerm_key_vault.main.id
-  app_config_id              = azurerm_app_configuration.main.id
-  cosmos_account_id          = azurerm_cosmosdb_account.serverless.id
-  cosmos_account_name        = azurerm_cosmosdb_account.serverless.name
-  cosmos_resource_group_name = data.azurerm_resource_group.main.name
-  arm_tenant_id              = data.azurerm_client_config.current.tenant_id
-  arm_subscription_id        = data.azurerm_client_config.current.subscription_id
-  google_client_id           = data.azurerm_key_vault_secret.google_oauth_client_id.value
+  name                        = each.key
+  ci_only                     = contains(local.ci_only_apps, each.key)
+  default_branch              = lookup(local.app_default_branch, each.key, "main")
+  topics                      = lookup(local.app_topics, each.key, [])
+  pages_branch                = lookup(local.app_pages_branch, each.key, "")
+  key_vault_name              = data.azurerm_key_vault.main.name
+  key_vault_id                = data.azurerm_key_vault.main.id
+  app_config_id               = azurerm_app_configuration.main.id
+  cosmos_account_id           = azurerm_cosmosdb_account.serverless.id
+  cosmos_account_name         = azurerm_cosmosdb_account.serverless.name
+  cosmos_resource_group_name  = data.azurerm_resource_group.main.name
+  arm_tenant_id               = data.azurerm_client_config.current.tenant_id
+  arm_subscription_id         = data.azurerm_client_config.current.subscription_id
+  google_client_id            = data.azurerm_key_vault_secret.google_oauth_client_id.value
+  extra_graph_app_role_values = lookup(local.extra_graph_app_role_values, each.key, toset([]))
 }

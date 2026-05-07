@@ -87,6 +87,12 @@ variable "google_client_id" {
   default = ""
 }
 
+variable "extra_graph_app_role_values" {
+  description = "Additional Microsoft Graph application role values to grant to the app CI service principal."
+  type        = set(string)
+  default     = []
+}
+
 # ── Core resources (all apps) ──────────────────────────────────────
 
 resource "github_repository" "repo" {
@@ -184,14 +190,15 @@ module "web" {
   # this submodule's `github_actions_variable` resources as dependent on
   # the repo's creation. Without this, on a brand-new app's first apply,
   # the variable POSTs race the repo create and 404.
-  repo_name                  = github_repository.repo.name
-  principal_id               = azuread_service_principal.app.object_id
-  application_id             = azuread_application.app.id
-  arm_subscription_id        = var.arm_subscription_id
-  key_vault_id               = var.key_vault_id
-  app_config_id              = var.app_config_id
-  cosmos_account_id          = var.cosmos_account_id
-  cosmos_account_name        = var.cosmos_account_name
-  cosmos_resource_group_name = var.cosmos_resource_group_name
-  google_client_id           = var.google_client_id
+  repo_name                   = github_repository.repo.name
+  principal_id                = azuread_service_principal.app.object_id
+  application_id              = azuread_application.app.id
+  arm_subscription_id         = var.arm_subscription_id
+  key_vault_id                = var.key_vault_id
+  app_config_id               = var.app_config_id
+  cosmos_account_id           = var.cosmos_account_id
+  cosmos_account_name         = var.cosmos_account_name
+  cosmos_resource_group_name  = var.cosmos_resource_group_name
+  google_client_id            = var.google_client_id
+  extra_graph_app_role_values = var.extra_graph_app_role_values
 }

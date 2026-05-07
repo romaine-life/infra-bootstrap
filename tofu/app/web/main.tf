@@ -60,6 +60,11 @@ variable "google_client_id" {
   type = string
 }
 
+variable "extra_graph_app_role_values" {
+  type    = set(string)
+  default = []
+}
+
 # Contributor (subscription scope)
 resource "azurerm_role_assignment" "contributor" {
   scope                = "/subscriptions/${var.arm_subscription_id}"
@@ -112,6 +117,14 @@ data "azuread_service_principal" "msgraph" {
 
 resource "azuread_app_role_assignment" "app_readwrite_owned" {
   app_role_id         = "18a4783c-866b-4cc7-a460-3d5e5662c884"
+  principal_object_id = var.principal_id
+  resource_object_id  = data.azuread_service_principal.msgraph.object_id
+}
+
+resource "azuread_app_role_assignment" "extra_graph_app_roles" {
+  for_each = var.extra_graph_app_role_values
+
+  app_role_id         = data.azuread_service_principal.msgraph.app_role_ids[each.value]
   principal_object_id = var.principal_id
   resource_object_id  = data.azuread_service_principal.msgraph.object_id
 }
