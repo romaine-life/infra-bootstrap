@@ -289,6 +289,7 @@ module "app" {
   app_config_id               = azurerm_app_configuration.main.id
   cosmos_account_id           = azurerm_cosmosdb_account.serverless.id
   cosmos_account_name         = azurerm_cosmosdb_account.serverless.name
+  cosmos_resource_group_name  = data.azurerm_resource_group.main.name
   arm_tenant_id               = data.azurerm_client_config.current.tenant_id
   arm_subscription_id         = data.azurerm_client_config.current.subscription_id
   google_client_id            = data.azurerm_key_vault_secret.google_oauth_client_id.value
