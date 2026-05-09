@@ -11,14 +11,16 @@ data "azuread_service_principal" "mcp_azure_personal" {
 }
 
 resource "azurerm_role_assignment" "mcp_azure_personal_reader" {
-  scope                = data.azurerm_subscription.current.id
+  provider             = azurerm.cluster
+  scope                = "/subscriptions/${local.cluster_subscription_id}"
   role_definition_name = "Reader"
   principal_id         = data.azuread_service_principal.mcp_azure_personal.object_id
   principal_type       = "ServicePrincipal"
 }
 
 resource "azurerm_role_assignment" "mcp_azure_personal_cost_management_reader" {
-  scope                = data.azurerm_subscription.current.id
+  provider             = azurerm.cluster
+  scope                = "/subscriptions/${local.cluster_subscription_id}"
   role_definition_name = "Cost Management Reader"
   principal_id         = data.azuread_service_principal.mcp_azure_personal.object_id
   principal_type       = "ServicePrincipal"
