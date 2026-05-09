@@ -144,16 +144,16 @@ locals {
     "fzt" = "main"
   }
   app_topics = {
-    "fzt-desktop"     = ["fzt-downstream"]
-    "fzt-showcase"    = ["fzt-downstream"]
-    "mcp-argocd"      = ["mcp-server", "tank-operator"]
-    "mcp-azure-admin" = ["mcp-server", "tank-operator"]
-    "mcp-github"      = ["mcp-server", "tank-operator"]
-    "mcp-glimmung"    = ["mcp-server", "glimmung"]
+    "fzt-desktop"       = ["fzt-downstream"]
+    "fzt-showcase"      = ["fzt-downstream"]
+    "mcp-argocd"        = ["mcp-server", "tank-operator"]
+    "mcp-azure-admin"   = ["mcp-server", "tank-operator"]
+    "mcp-github"        = ["mcp-server", "tank-operator"]
+    "mcp-glimmung"      = ["mcp-server", "glimmung"]
     "mcp-k8s"           = ["mcp-server", "tank-operator"]
     "mcp-tank-operator" = ["mcp-server", "tank-operator"]
     "platform-mcp"      = ["mcp-server", "tank-operator"]
-    "my-homepage"     = ["fzt-downstream"]
+    "my-homepage"       = ["fzt-downstream"]
   }
   app_pages_branch = {}
   extra_graph_app_role_values = {
