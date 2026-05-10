@@ -3,7 +3,7 @@
 # repo can run its own OpenTofu plan/apply workflow.
 
 data "azuread_application" "infra_ci" {
-  client_id = data.azurerm_client_config.current.client_id
+  client_id = "043b35c3-f5de-4578-acd2-8b8f4c78f461"
 }
 
 resource "azuread_application_federated_identity_credential" "osms_github_actions_main" {
