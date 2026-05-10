@@ -51,16 +51,6 @@ jobs:
           echo "::add-mask::$AUTH0_SECRET"
           echo "auth0_secret=$AUTH0_SECRET" >> $GITHUB_OUTPUT
 
-      - name: Repair Loki storage account shared key access
-        run: |
-          if az storage account show --resource-group infra --name romainelokilogs >/dev/null 2>&1; then
-            az storage account update \
-              --resource-group infra \
-              --name romainelokilogs \
-              --allow-shared-key-access true \
-              --output none
-          fi
-
       - name: Initialize OpenTofu
         working-directory: tofu
         env:
@@ -191,16 +181,6 @@ jobs:
           AUTH0_SECRET=$(az keyvault secret show --vault-name romaine-kv --name auth0-client-secret --query value -o tsv)
           echo "::add-mask::$AUTH0_SECRET"
           echo "auth0_secret=$AUTH0_SECRET" >> $GITHUB_OUTPUT
-
-      - name: Repair Loki storage account shared key access
-        run: |
-          if az storage account show --resource-group infra --name romainelokilogs >/dev/null 2>&1; then
-            az storage account update \
-              --resource-group infra \
-              --name romainelokilogs \
-              --allow-shared-key-access true \
-              --output none
-          fi
 
       - name: Initialize OpenTofu
         working-directory: tofu
