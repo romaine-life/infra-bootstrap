@@ -13,7 +13,6 @@ resource "azurerm_storage_account" "loki" {
   account_tier             = "Standard"
   account_replication_type = "LRS"
 
-  shared_access_key_enabled       = false
   allow_nested_items_to_be_public = false
   min_tls_version                 = "TLS1_2"
 
