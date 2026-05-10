@@ -63,7 +63,7 @@ resource "azurerm_role_assignment" "ambience_screenshots_uploader" {
 }
 
 # Push the storage details to the ambience repo as Actions variables so
-# the agent-run workflow can consume them without round-tripping through
+# the default workflow can consume them without round-tripping through
 # tofu output. State is still authoritative; this is just convenience
 # wiring (matches the existing app-config / KV-vault pattern).
 resource "github_actions_variable" "ambience_screenshot_storage_account" {
@@ -108,7 +108,7 @@ resource "azurerm_role_assignment" "glimmung_screenshots_uploader" {
   principal_id         = data.azuread_service_principal.glimmung_ci.object_id
 }
 
-# Glimmung's agent-run workflow reads these via `tofu output -raw <name>`
+# Glimmung's default workflow reads these via `tofu output -raw <name>`
 # against this state at runtime, instead of pushing them into GitHub
 # Actions vars. State is the single source of truth; rotations don't
 # need a tofu re-apply just to push the new value. The role assignment
@@ -120,12 +120,12 @@ resource "azurerm_role_assignment" "glimmung_screenshots_uploader" {
 # to this one.)
 output "agent_screenshots_storage_account" {
   value       = azurerm_storage_account.agent_screenshots.name
-  description = "Name of the shared agent-run screenshot storage account."
+  description = "Name of the shared agent screenshot storage account."
 }
 
 output "agent_screenshots_container_glimmung" {
   value       = azurerm_storage_container.agent_screenshots_glimmung.name
-  description = "Per-app blob container holding glimmung's agent-run screenshots."
+  description = "Per-app blob container holding glimmung's agent screenshots."
 }
 
 output "agent_screenshots_container_url_glimmung" {
