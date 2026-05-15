@@ -41,6 +41,18 @@ resource "azuread_application" "microsoft_login" {
       "http://localhost:5500/",
     ]
   }
+
+  # auth.romaine.life onboarding: the new central auth service does
+  # authorization-code-with-client-secret (a web flow, not SPA), so its
+  # callback URL goes here. SPA URIs above stay for now and get pruned
+  # in a follow-up after every per-app frontend has switched to the
+  # redirect-to-auth.romaine.life flow.
+  web {
+    redirect_uris = [
+      "https://auth.romaine.life/api/auth/callback/microsoft",
+      "http://localhost:3000/api/auth/callback/microsoft",
+    ]
+  }
 }
 
 resource "azuread_application_password" "microsoft_login" {
