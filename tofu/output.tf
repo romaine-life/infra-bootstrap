@@ -81,30 +81,6 @@ output "arm_tenant_id" {
 }
 
 # ============================================================================
-# Auth0 Outputs
-# ============================================================================
-
-output "auth0_domain" {
-  value       = auth0_custom_domain.main.domain
-  description = "Auth0 custom domain (e.g., auth.romaine.life)"
-}
-
-output "auth0_connection_github_id" {
-  value       = auth0_connection.github.id
-  description = "Auth0 GitHub connection ID"
-}
-
-output "auth0_connection_google_id" {
-  value       = auth0_connection.google.id
-  description = "Auth0 Google connection ID"
-}
-
-output "auth0_connection_apple_id" {
-  value       = auth0_connection.apple.id
-  description = "Auth0 Apple connection ID"
-}
-
-# ============================================================================
 # AKS Outputs
 # ============================================================================
 
