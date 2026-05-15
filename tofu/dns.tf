@@ -103,13 +103,3 @@ resource "azurerm_dns_txt_record" "dkim" {
 }
 
 
-# Auth0 Custom Domain
-resource "azurerm_dns_cname_record" "auth0" {
-  name                = "auth"
-  zone_name           = azurerm_dns_zone.main.name
-  resource_group_name = data.azurerm_resource_group.main.name
-  ttl                 = 3600
-  record              = auth0_custom_domain.main.verification[0].methods[0].record
-
-}
-

@@ -6,11 +6,10 @@
 # azure-app module in their respective repositories.
 # ============================================================================
 
-# Resource Group
-# ============================================================================
-# The resource group is created by bootstrap.ps1 and referenced here as data
-# source. This allows the bootstrap process to manage the RG lifecycle while
-# Terraform can use it for deploying resources.
+# Azure client + resource group data sources. client_config is consumed by
+# locals below, output.tf, keyvault.tf, etc. — kept at the top of the file
+# so the dependency is obvious at a glance.
+data "azurerm_client_config" "current" {}
 
 data "azurerm_resource_group" "main" {
   name = "infra"
@@ -64,18 +63,6 @@ resource "azurerm_app_configuration_key" "cosmos_db_endpoint" {
   configuration_store_id = azurerm_app_configuration.main.id
   key                    = "cosmos_db_endpoint"
   value                  = azurerm_cosmosdb_account.serverless.endpoint
-}
-
-resource "azurerm_app_configuration_key" "auth0_domain" {
-  configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "AUTH0_DOMAIN"
-  value                  = auth0_custom_domain.main.domain
-}
-
-resource "azurerm_app_configuration_key" "auth0_audience" {
-  configuration_store_id = azurerm_app_configuration.main.id
-  key                    = "AUTH0_AUDIENCE"
-  value                  = "https://api.${azurerm_dns_zone.main.name}" # The identifier you used in backend.tf
 }
 
 # ============================================================================
