@@ -43,6 +43,16 @@ resource "azurerm_kubernetes_cluster" "main" {
     vnet_subnet_id  = azurerm_subnet.aks_nodes.id
 
     temporary_name_for_rotation = "tmp"
+
+    # AKS auto-populates upgrade_settings on the node pool; declare these
+    # explicitly so tofu doesn't see drift and try to unset
+    # undrainable_node_behavior (which forces full cluster replacement).
+    upgrade_settings {
+      drain_timeout_in_minutes      = 0
+      max_surge                     = "10%"
+      node_soak_duration_in_minutes = 0
+      undrainable_node_behavior     = "Schedule"
+    }
   }
 
   network_profile {
@@ -82,6 +92,16 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes[0].id
 
     temporary_name_for_rotation = "tmp"
+
+    # AKS auto-populates upgrade_settings on the node pool; declare these
+    # explicitly so tofu doesn't see drift and try to unset
+    # undrainable_node_behavior (which forces full cluster replacement).
+    upgrade_settings {
+      drain_timeout_in_minutes      = 0
+      max_surge                     = "10%"
+      node_soak_duration_in_minutes = 0
+      undrainable_node_behavior     = "Schedule"
+    }
   }
 
   network_profile {
