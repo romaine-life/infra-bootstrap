@@ -110,16 +110,16 @@ locals {
   # Apps deployed on AKS — gives the app SP AcrPush on romainecr (for CI to
   # push images). Expand as each app migrates off the shared api onto its
   # own K8s Deployment.
-  k8s_apps = toset(["ambience", "auth", "investing", "house-hunt", "kill-me", "fzt-frontend", "my-homepage", "diagrams", "llm-explorer", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-admin", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "void-drifter-infra"])
+  k8s_apps = toset(["ambience", "auth", "house-hunt", "kill-me", "fzt-frontend", "my-homepage", "diagrams", "llm-explorer", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-admin", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "void-drifter-infra"])
 
   # Subset of k8s_apps whose pods federate to infra-shared-identity via
   # `system:serviceaccount:<app>:infra-shared`. Empty: every app has
-  # migrated to its own per-app identity (kill-me, investing, house-hunt,
-  # plant-agent, diagrams in their own tofu; fzt-frontend and llm-explorer
-  # in this repo via fzt-frontend-identity.tf / llm-explorer-identity.tf;
-  # glimmung in glimmung/tofu/identity.tf). The convention is fully
-  # retired — adding a new app here re-introduces the cross-app blast
-  # radius we just dismantled. Don't.
+  # migrated to its own per-app identity (kill-me, house-hunt, diagrams
+  # in their own tofu; fzt-frontend and llm-explorer in this repo via
+  # fzt-frontend-identity.tf / llm-explorer-identity.tf; glimmung in
+  # glimmung/tofu/identity.tf). The convention is fully retired —
+  # adding a new app here re-introduces the cross-app blast radius we
+  # just dismantled. Don't.
   #
   # The shared_workload_app for_each in aks.tf renders zero resources
   # while this is empty. Once we're confident no rollback is needed, the
@@ -257,7 +257,6 @@ module "app" {
     "fzt-terminal",
     "glimmung",
     "house-hunt",
-    "investing",
     "kill-me",
     "lights",
     "llm-explorer",
