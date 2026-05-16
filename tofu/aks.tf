@@ -47,9 +47,20 @@ resource "azurerm_kubernetes_cluster" "main" {
     # AKS auto-populates upgrade_settings on the node pool; declare these
     # explicitly so tofu doesn't see drift and try to unset
     # undrainable_node_behavior (which forces full cluster replacement).
+    #
+    # max_surge="33%" matches Microsoft's documented recommendation for
+    # production system pools
+    # (https://learn.microsoft.com/en-us/azure/aks/upgrade-cluster#customize-node-surge-upgrade).
+    # On the current 2-node pool, 33% rounds up to 1 surge node, same as
+    # the previous 10% — no behavior change at this size. The win shows
+    # up if/when the pool scales: 6 nodes → 2 surge instead of 1, 10
+    # nodes → 4 surge instead of 1. Upgrade wall-clock drops roughly
+    # linearly. The doubling-cost concern of higher values like "100%"
+    # is avoided because surge nodes only exist for the duration of one
+    # node's drain (single-digit minutes).
     upgrade_settings {
       drain_timeout_in_minutes      = 0
-      max_surge                     = "10%"
+      max_surge                     = "33%"
       node_soak_duration_in_minutes = 0
       undrainable_node_behavior     = "Schedule"
     }
@@ -96,9 +107,20 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     # AKS auto-populates upgrade_settings on the node pool; declare these
     # explicitly so tofu doesn't see drift and try to unset
     # undrainable_node_behavior (which forces full cluster replacement).
+    #
+    # max_surge="33%" matches Microsoft's documented recommendation for
+    # production system pools
+    # (https://learn.microsoft.com/en-us/azure/aks/upgrade-cluster#customize-node-surge-upgrade).
+    # On the current 2-node pool, 33% rounds up to 1 surge node, same as
+    # the previous 10% — no behavior change at this size. The win shows
+    # up if/when the pool scales: 6 nodes → 2 surge instead of 1, 10
+    # nodes → 4 surge instead of 1. Upgrade wall-clock drops roughly
+    # linearly. The doubling-cost concern of higher values like "100%"
+    # is avoided because surge nodes only exist for the duration of one
+    # node's drain (single-digit minutes).
     upgrade_settings {
       drain_timeout_in_minutes      = 0
-      max_surge                     = "10%"
+      max_surge                     = "33%"
       node_soak_duration_in_minutes = 0
       undrainable_node_behavior     = "Schedule"
     }
