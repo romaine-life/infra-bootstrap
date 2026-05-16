@@ -71,6 +71,14 @@ resource "azurerm_dns_txt_record" "apex" {
     value = "google-site-verification=bIQ8zuUK_DUCCoYi8zUF1CxK_Hn-1Ipah9vgn4PN2z4"
   }
 
+  # Second Search Console property — added 2026-05-16 so we can request a
+  # review of the Safe Browsing phishing flag that Chrome's classifier put
+  # on auth.romaine.life right after first deploy. A Domain property on
+  # romaine.life covers all subdomains, including the flagged one.
+  record {
+    value = "google-site-verification=wyso_nLFF8k8_sFT6reUtq456NpYBaRcWFxv52ERfhU"
+  }
+
 }
 
 # DMARC Record - Email authentication policy
