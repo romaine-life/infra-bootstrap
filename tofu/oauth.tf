@@ -26,27 +26,13 @@ resource "azuread_application" "microsoft_login" {
     requested_access_token_version = 2
   }
 
-  single_page_application {
-    redirect_uris = [
-      # Custom domains
-      "https://homepage.romaine.life/",
-      "https://workout.romaine.life/",
-      "https://plants.romaine.life/",
-      # SWA bypass URLs (auto-generated, stable)
-      "https://white-sea-0beb0bf1e.7.azurestaticapps.net/",    # homepage
-      "https://nice-sea-09c30861e.2.azurestaticapps.net/",     # workout
-      "https://lemon-island-070f8051e.2.azurestaticapps.net/", # plant-agent
-      # Local dev
-      "http://localhost:5173/",
-      "http://localhost:5500/",
-    ]
-  }
-
-  # auth.romaine.life onboarding: the new central auth service does
-  # authorization-code-with-client-secret (a web flow, not SPA), so its
-  # callback URL goes here. SPA URIs above stay for now and get pruned
-  # in a follow-up after every per-app frontend has switched to the
-  # redirect-to-auth.romaine.life flow.
+  # auth.romaine.life is the only consumer of this app reg. It does the
+  # Microsoft authorization-code-with-client-secret flow (web, not SPA) and
+  # exchanges sessions for downstream apps via /api/auth/token. Per-app
+  # browser MSAL flows (homepage, workout/kill-me, plants/plant-agent,
+  # investing, househunt, glimmung) all retired alongside their own Entra
+  # app regs; the previously-listed SPA redirect URIs no longer have any
+  # caller and were pruned here.
   web {
     redirect_uris = [
       "https://auth.romaine.life/api/auth/callback/microsoft",
