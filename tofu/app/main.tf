@@ -122,13 +122,36 @@ resource "github_repository" "repo" {
   }
 }
 
+# `azuread_client_config` resolves to whichever identity is currently
+# running this apply — i.e. infra-bootstrap's own tofu CI SP. Used below
+# to register that SP as owner of every per-app Application + Service
+# Principal we create, so the same SP that creates them can also destroy
+# them on a future apply via `Application.ReadWrite.OwnedBy`.
+data "azuread_client_config" "current" {}
+
 # Per-app Azure AD application + service principal
 resource "azuread_application" "app" {
   display_name = var.name
+  # Microsoft Graph implicitly adds the creator as an Application owner on
+  # POST /applications, but setting it explicitly here makes the behavior
+  # contractual rather than implicit and keeps Application and Service
+  # Principal owners symmetrical.
+  owners = [data.azuread_client_config.current.object_id]
 }
 
 resource "azuread_service_principal" "app" {
   client_id = azuread_application.app.client_id
+  # Unlike Application, the Graph SP creation endpoint does NOT
+  # implicitly assign an owner — `azuread_service_principal` docs:
+  # "By default, no owners are assigned." Without this line, every SP
+  # the for_each created has empty owners, so the corresponding
+  # `Application.ReadWrite.OwnedBy` permission on `infra_ci` doesn't
+  # allow deleting them on a later destroy (Graph 403). That's what
+  # left the `tank-operator-oauth` / `tank-operator-oauth-test` SPs
+  # un-destroyable in tank-operator's tofu state after #471. Setting
+  # this on every new SP closes the gap; existing SPs in the for_each
+  # gain an owner in-place on the next apply.
+  owners = [data.azuread_client_config.current.object_id]
 }
 
 # Key Vault Secrets User (read-only) — ci_only apps get this instead of Officer
