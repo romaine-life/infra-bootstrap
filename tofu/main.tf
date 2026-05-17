@@ -153,6 +153,24 @@ locals {
   ])
   extra_graph_app_role_values = {
   }
+
+  # Apps whose CI SP runs its own `tofu` pipeline against the shared
+  # `nelsontofu` state backend. Membership grants the full opt-in set
+  # required to plan + apply: Storage Blob Data Contributor (tfstate),
+  # Subscription Contributor (ARM resources), Role Based Access Control
+  # Administrator (role assignment writes), Key Vault Secrets Officer
+  # (data-plane KV writes), plus the TFSTATE_STORAGE_ACCOUNT repo var.
+  #
+  # Listed explicitly rather than derived from `!ci_only`: "owns its own
+  # tofu" and "is a web app" are independent axes. A backend service
+  # like mcp-azure-personal owns its own tofu without being a web app.
+  # Add a repo here when its CI grows an `infra/` directory + `tofu`
+  # workflow.
+  runs_own_tofu_apps = toset([
+    "ambience", "auth", "bender-world", "card-utility-stats", "diagrams", "eight-queens",
+    "fzt-showcase", "glimmung", "hermes", "house-hunt", "kill-me", "lights", "llm-explorer",
+    "mcp-azure-personal", "my-homepage", "tank-operator", "void-drifter-infra",
+  ])
 }
 
 resource "random_password" "card_utility_stats_vm_admin" {
@@ -290,19 +308,23 @@ module "app" {
     "void-drifter-infra",
   ])
 
-  name                        = each.key
-  ci_only                     = contains(local.ci_only_apps, each.key)
-  default_branch              = lookup(local.app_default_branch, each.key, "main")
-  topics                      = lookup(local.app_topics, each.key, [])
-  pages_branch                = lookup(local.app_pages_branch, each.key, "")
-  key_vault_name              = data.azurerm_key_vault.main.name
-  key_vault_id                = data.azurerm_key_vault.main.id
-  app_config_id               = azurerm_app_configuration.main.id
-  cosmos_account_id           = azurerm_cosmosdb_account.serverless.id
-  cosmos_account_name         = azurerm_cosmosdb_account.serverless.name
-  cosmos_resource_group_name  = data.azurerm_resource_group.main.name
-  arm_tenant_id               = data.azurerm_client_config.current.tenant_id
-  arm_subscription_id         = data.azurerm_client_config.current.subscription_id
-  google_client_id            = data.azurerm_key_vault_secret.google_oauth_client_id.value
-  extra_graph_app_role_values = setunion(local.default_graph_app_role_values, lookup(local.extra_graph_app_role_values, each.key, toset([])))
+  name                           = each.key
+  ci_only                        = contains(local.ci_only_apps, each.key)
+  tfstate_access                 = contains(local.runs_own_tofu_apps, each.key)
+  manages_subscription_resources = contains(local.runs_own_tofu_apps, each.key)
+  manages_role_assignments       = contains(local.runs_own_tofu_apps, each.key)
+  manages_keyvault_secrets       = contains(local.runs_own_tofu_apps, each.key)
+  default_branch                 = lookup(local.app_default_branch, each.key, "main")
+  topics                         = lookup(local.app_topics, each.key, [])
+  pages_branch                   = lookup(local.app_pages_branch, each.key, "")
+  key_vault_name                 = data.azurerm_key_vault.main.name
+  key_vault_id                   = data.azurerm_key_vault.main.id
+  app_config_id                  = azurerm_app_configuration.main.id
+  cosmos_account_id              = azurerm_cosmosdb_account.serverless.id
+  cosmos_account_name            = azurerm_cosmosdb_account.serverless.name
+  cosmos_resource_group_name     = data.azurerm_resource_group.main.name
+  arm_tenant_id                  = data.azurerm_client_config.current.tenant_id
+  arm_subscription_id            = data.azurerm_client_config.current.subscription_id
+  google_client_id               = data.azurerm_key_vault_secret.google_oauth_client_id.value
+  extra_graph_app_role_values    = setunion(local.default_graph_app_role_values, lookup(local.extra_graph_app_role_values, each.key, toset([])))
 }
