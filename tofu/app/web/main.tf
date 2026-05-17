@@ -93,13 +93,6 @@ resource "azurerm_role_assignment" "appconfig_data_owner" {
   principal_id         = var.principal_id
 }
 
-# Storage Blob Data Contributor (subscription scope)
-resource "azurerm_role_assignment" "storage_blob_contributor" {
-  scope                = "/subscriptions/${var.arm_subscription_id}"
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = var.principal_id
-}
-
 # Cosmos DB Built-in Data Reader
 resource "azurerm_cosmosdb_sql_role_assignment" "cosmos_data_reader" {
   resource_group_name = var.cosmos_resource_group_name
@@ -153,12 +146,6 @@ resource "azuread_application_federated_identity_credential" "github_actions_dev
 }
 
 # GitHub Actions variables
-resource "github_actions_variable" "tfstate_storage_account" {
-  repository    = var.repo_name
-  variable_name = "TFSTATE_STORAGE_ACCOUNT"
-  value         = "nelsontofu"
-}
-
 resource "github_actions_variable" "google_client_id" {
   repository    = var.repo_name
   variable_name = "GOOGLE_CLIENT_ID"

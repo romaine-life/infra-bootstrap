@@ -48,6 +48,17 @@ variable "ci_only" {
   default     = false
 }
 
+# ── Optional capability opt-ins ──────────────────────────────────────
+# Independent of ci_only. Each flag turns on the specific Azure / GitHub
+# Actions plumbing required for a downstream capability. Defaults are
+# false; the root module enables them per-app via locals.
+
+variable "tfstate_access" {
+  description = "When true, grant Storage Blob Data Contributor at subscription scope and set the TFSTATE_STORAGE_ACCOUNT repo variable so this app's CI SP can read/write the shared `nelsontofu` state backend. Required for any repo that runs its own `tofu` pipeline."
+  type        = bool
+  default     = false
+}
+
 variable "topics" {
   description = "GitHub repository topics for categorization and discovery."
   type        = list(string)
@@ -178,6 +189,26 @@ resource "github_actions_variable" "arm_subscription_id" {
   repository    = github_repository.repo.name
   variable_name = "ARM_SUBSCRIPTION_ID"
   value         = var.arm_subscription_id
+}
+
+# ── Tofu state backend access (opt-in via var.tfstate_access) ──────
+# Lives in the parent module so a ci_only app like mcp-azure-personal
+# can opt in without becoming a web app. Previously these two resources
+# lived in the web sub-module, gated implicitly on `ci_only = false`;
+# `tofu/app/moved.tf` carries the state addresses forward.
+
+resource "azurerm_role_assignment" "storage_blob_contributor" {
+  count                = var.tfstate_access ? 1 : 0
+  scope                = "/subscriptions/${var.arm_subscription_id}"
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = azuread_service_principal.app.object_id
+}
+
+resource "github_actions_variable" "tfstate_storage_account" {
+  count         = var.tfstate_access ? 1 : 0
+  repository    = github_repository.repo.name
+  variable_name = "TFSTATE_STORAGE_ACCOUNT"
+  value         = "nelsontofu"
 }
 
 # ── Web app resources (skipped when ci_only = true) ────────────────

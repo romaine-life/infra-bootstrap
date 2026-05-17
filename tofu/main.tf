@@ -153,6 +153,16 @@ locals {
   ])
   extra_graph_app_role_values = {
   }
+
+  # Apps whose CI SP needs read/write on the shared `nelsontofu` state
+  # backend (Storage Blob Data Contributor at subscription scope) plus the
+  # TFSTATE_STORAGE_ACCOUNT repo variable. Every non-ci_only app already
+  # had these via the web sub-module; listing only the ci_only opt-ins
+  # keeps the set short. Add an entry here when a ci_only repo grows its
+  # own `infra/` directory and `tofu` workflow.
+  ci_only_tfstate_opt_ins = toset([
+    "mcp-azure-personal",
+  ])
 }
 
 resource "random_password" "card_utility_stats_vm_admin" {
@@ -290,9 +300,10 @@ module "app" {
     "void-drifter-infra",
   ])
 
-  name                        = each.key
-  ci_only                     = contains(local.ci_only_apps, each.key)
-  default_branch              = lookup(local.app_default_branch, each.key, "main")
+  name           = each.key
+  ci_only        = contains(local.ci_only_apps, each.key)
+  tfstate_access = !contains(local.ci_only_apps, each.key) || contains(local.ci_only_tfstate_opt_ins, each.key)
+  default_branch = lookup(local.app_default_branch, each.key, "main")
   topics                      = lookup(local.app_topics, each.key, [])
   pages_branch                = lookup(local.app_pages_branch, each.key, "")
   key_vault_name              = data.azurerm_key_vault.main.name
