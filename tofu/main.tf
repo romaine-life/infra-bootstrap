@@ -168,8 +168,8 @@ locals {
   # workflow.
   runs_own_tofu_apps = toset([
     "ambience", "auth", "bender-world", "card-utility-stats", "diagrams", "eight-queens",
-    "fzt-showcase", "glimmung", "hermes", "house-hunt", "kill-me", "lights", "llm-explorer",
-    "mcp-azure-personal", "my-homepage", "tank-operator", "void-drifter-infra",
+    "fzt-frontend", "fzt-showcase", "glimmung", "hermes", "house-hunt", "kill-me", "lights",
+    "llm-explorer", "mcp-azure-personal", "my-homepage", "tank-operator", "void-drifter-infra",
   ])
 }
 
