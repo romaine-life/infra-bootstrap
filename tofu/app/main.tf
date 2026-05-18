@@ -11,6 +11,11 @@ terraform {
     azurerm = {
       source  = "hashicorp/azurerm"
       version = "~> 4.0"
+      # `azurerm.cluster` lets this module grant role assignments / write
+      # resources in the cluster's subscription (var.cluster_subscription_id)
+      # using a provider configured with that sub. The root module is
+      # required to pass it through `providers = { azurerm.cluster = ... }`.
+      configuration_aliases = [azurerm.cluster]
     }
   }
 }
@@ -35,6 +40,11 @@ variable "arm_tenant_id" {
 
 variable "arm_subscription_id" {
   type = string
+}
+
+variable "cluster_subscription_id" {
+  description = "Azure subscription ID for the AKS cluster. Per-app SPs get Owner here unconditionally — app-specific cluster-scope grants (workload UAMIs, federated credentials, etc.) belong in the app's own tofu, not in infra-bootstrap, and Owner is what enables that. The CLUSTER_SUBSCRIPTION_ID GitHub Actions variable is also set on every app's repo so per-app tofu can reference this sub without hardcoding the GUID."
+  type        = string
 }
 
 variable "default_branch" {
@@ -223,6 +233,29 @@ resource "azurerm_role_assignment" "rbac_admin" {
   principal_id         = azuread_service_principal.app.object_id
 }
 
+# Cluster subscription Owner — always-on for every per-app SP whenever the
+# cluster lives in a different sub than the workload subscription. Owner
+# (not Contributor + RBAC Admin) so each app's tofu can do whatever it
+# needs against its own cluster-scope resources: write role assignments on
+# the cluster for its workload UAMI (e.g. runCommand), federate new pod
+# identities to the cluster OIDC issuer, etc. — without infra-bootstrap
+# having to know about each app's specific needs.
+#
+# This replaces the historical anti-pattern of granting app-specific
+# identities directly from infra-bootstrap/tofu/aks.tf (see the deleted
+# `mcp_azure_personal_cluster_contributor` resource): app-specific grants
+# belong in the app's own tofu.
+#
+# Skipped when cluster sub == workload sub (no dedicated cluster sub) —
+# the existing workload-sub opt-in flags already cover that case.
+resource "azurerm_role_assignment" "cluster_subscription_owner" {
+  provider             = azurerm.cluster
+  count                = var.cluster_subscription_id != "" && var.cluster_subscription_id != var.arm_subscription_id ? 1 : 0
+  scope                = "/subscriptions/${var.cluster_subscription_id}"
+  role_definition_name = "Owner"
+  principal_id         = azuread_service_principal.app.object_id
+}
+
 # OIDC federated credentials — default branch + pull requests
 resource "azuread_application_federated_identity_credential" "github_actions_main" {
   application_id = azuread_application.app.id
@@ -262,6 +295,17 @@ resource "github_actions_variable" "arm_subscription_id" {
   repository    = github_repository.repo.name
   variable_name = "ARM_SUBSCRIPTION_ID"
   value         = var.arm_subscription_id
+}
+
+# CLUSTER_SUBSCRIPTION_ID — set on every app's repo regardless of whether
+# the app touches the cluster sub. Cheap to publish, useful for any per-app
+# tofu that wants to construct cross-sub data lookups / scope strings
+# without hardcoding the GUID. Empty string allowed for setups with no
+# dedicated cluster sub.
+resource "github_actions_variable" "cluster_subscription_id" {
+  repository    = github_repository.repo.name
+  variable_name = "CLUSTER_SUBSCRIPTION_ID"
+  value         = var.cluster_subscription_id
 }
 
 # ── Tofu state backend access (opt-in via var.tfstate_access) ──────

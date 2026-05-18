@@ -274,6 +274,14 @@ moved {
 
 module "app" {
   source = "./app"
+  # The cluster provider is configured against `var.cluster_subscription_id`
+  # so per-app SPs can be granted Owner on the cluster sub from infra-
+  # bootstrap (single point of authority). App-specific cluster-scope
+  # resources go in each app's own tofu.
+  providers = {
+    azurerm         = azurerm
+    azurerm.cluster = azurerm.cluster
+  }
   for_each = toset([
     "ambience",
     "auth",
@@ -325,6 +333,7 @@ module "app" {
   cosmos_resource_group_name     = data.azurerm_resource_group.main.name
   arm_tenant_id                  = data.azurerm_client_config.current.tenant_id
   arm_subscription_id            = data.azurerm_client_config.current.subscription_id
+  cluster_subscription_id        = local.cluster_subscription_id
   google_client_id               = data.azurerm_key_vault_secret.google_oauth_client_id.value
   extra_graph_app_role_values    = setunion(local.default_graph_app_role_values, lookup(local.extra_graph_app_role_values, each.key, toset([])))
 }
