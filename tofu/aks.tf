@@ -44,10 +44,10 @@ resource "azurerm_kubernetes_cluster" "cluster" {
   }
 
   default_node_pool {
-    # The intended final name is "system", but the B2s -> E2bs rotation
-    # created this pool under the temporary name and quota does not allow
-    # holding user + tmp + system EBSv5 pools at the same time. Keep the
-    # live pool name here until the user pool is drained and removed.
+    # This pool was created by the B2s -> E2bs rotation under a temporary
+    # name. Renaming a default node pool makes azurerm plan a full AKS
+    # cluster replacement, so keep it as the default pool and add a named
+    # `system` system-mode pool below.
     name            = "tmp"
     vm_size         = "Standard_E2bs_v5"
     node_count      = 3
@@ -87,6 +87,34 @@ resource "azurerm_kubernetes_cluster" "cluster" {
 moved {
   from = azurerm_kubernetes_cluster.cluster[0]
   to   = azurerm_kubernetes_cluster.cluster
+}
+
+# ============================================================================
+# Named System Node Pool — Standard_E2bs_v5
+# ============================================================================
+# This is the durable replacement for the temporary default pool name above.
+# AKS/azurerm cannot safely rename a default node pool in place, so `tmp`
+# remains the default pool while workloads migrate onto this normal system-mode
+# node pool. Once this pool is healthy and the user pool is gone, scale `tmp`
+# down separately.
+# ============================================================================
+
+resource "azurerm_kubernetes_cluster_node_pool" "cluster_system" {
+  provider = azurerm.cluster
+
+  name                  = "system"
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
+  vm_size               = "Standard_E2bs_v5"
+  node_count            = 2
+  os_disk_size_gb       = 128
+  vnet_subnet_id        = azurerm_subnet.cluster_aks_nodes.id
+  mode                  = "System"
+
+  upgrade_settings {
+    drain_timeout_in_minutes      = 0
+    max_surge                     = "33%"
+    node_soak_duration_in_minutes = 0
+  }
 }
 
 # ============================================================================
