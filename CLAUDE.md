@@ -36,7 +36,7 @@ The CI workflow (`tofu.yaml`) has a bootstrap job that runs once: installs ArgoC
 
 ## Cluster Components
 
-- **AKS** (`infra-aks`) — Free tier, interim system-mode pool is `tmp` at 2× Standard_E2bs_v5 (2 vCPU, 16 GiB), Azure CNI Overlay, workload identity. The final intended default pool name is `system`; it is temporarily `tmp` because quota does not allow holding the `user`, `tmp`, and replacement `system` EBSv5 pools at once. The cluster intentionally runs mixed platform and app workloads in one pool; add a separate pool only for a concrete scheduling boundary such as GPU, spot, isolation, or a high-churn workload class. A temporary `user` pool may exist during migration and should be removed after workloads are drained back to the system-mode pool; once it is gone, rename back to `system` and scale to 3 nodes.
+- **AKS** (`infra-aks`) — Free tier, system-mode pool is `system` at 3× Standard_E2bs_v5 (2 vCPU, 16 GiB), Azure CNI Overlay, workload identity. The cluster intentionally runs mixed platform and app workloads in one pool; add a separate pool only for a concrete scheduling boundary such as GPU, spot, isolation, or a high-churn workload class. A drained legacy default pool named `tmp` may briefly exist during migration and should be deleted once the named `system` pool is verified healthy.
 - **ACR** (`romainecr`) — Basic SKU, AcrPull for kubelet identity
 - **Envoy Gateway** — Gateway API controller + shared Gateway with HTTP/HTTPS listeners
 - **ExternalDNS** — Azure DNS via workload identity, watches HTTPRoute resources
