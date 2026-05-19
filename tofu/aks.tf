@@ -92,11 +92,9 @@ moved {
 # ============================================================================
 # Named System Node Pool — Standard_E2bs_v5
 # ============================================================================
-# This is the durable replacement for the temporary default pool name above.
-# AKS/azurerm cannot safely rename a default node pool in place, so `tmp`
-# remains the default pool while workloads migrate onto this normal system-mode
-# node pool. Once this pool is healthy and the user pool is gone, scale `tmp`
-# down separately.
+# This is the durable system capacity for the cluster. AKS/azurerm cannot safely
+# rename a default node pool in place, so `tmp` remains as the one-node default
+# system pool while regular workloads run on this named system-mode pool.
 # ============================================================================
 
 resource "azurerm_kubernetes_cluster_node_pool" "cluster_system" {
@@ -109,33 +107,6 @@ resource "azurerm_kubernetes_cluster_node_pool" "cluster_system" {
   os_disk_size_gb       = 128
   vnet_subnet_id        = azurerm_subnet.cluster_aks_nodes.id
   mode                  = "System"
-
-  upgrade_settings {
-    drain_timeout_in_minutes      = 0
-    max_surge                     = "33%"
-    node_soak_duration_in_minutes = 0
-  }
-}
-
-# ============================================================================
-# Temporary User Node Pool — Standard_E2bs_v5 (memory-optimized burstable)
-# ============================================================================
-# Kept during the system-pool resize so the cluster has enough capacity while
-# the default `system` pool moves from B-family to E-family. Once the system
-# pool is confirmed on Standard_E2bs_v5 and workloads have been drained back
-# off this pool, remove this resource in a follow-up change.
-# ============================================================================
-
-resource "azurerm_kubernetes_cluster_node_pool" "cluster_user" {
-  provider = azurerm.cluster
-
-  name                  = "user"
-  kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
-  vm_size               = "Standard_E2bs_v5"
-  node_count            = 1
-  os_disk_size_gb       = 128
-  vnet_subnet_id        = azurerm_subnet.cluster_aks_nodes.id
-  mode                  = "User"
 
   upgrade_settings {
     drain_timeout_in_minutes      = 0
