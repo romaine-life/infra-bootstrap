@@ -44,13 +44,15 @@ resource "azurerm_kubernetes_cluster" "cluster" {
   }
 
   default_node_pool {
-    name            = "system"
+    # The intended final name is "system", but the B2s -> E2bs rotation
+    # created this pool under the temporary name and quota does not allow
+    # holding user + tmp + system EBSv5 pools at the same time. Keep the
+    # live pool name here until the user pool is drained and removed.
+    name            = "tmp"
     vm_size         = "Standard_E2bs_v5"
     node_count      = 2
     os_disk_size_gb = 128
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes.id
-
-    temporary_name_for_rotation = "tmp"
 
     # AKS auto-populates upgrade_settings on the node pool; declare these
     # explicitly so tofu doesn't see drift and try to unset
