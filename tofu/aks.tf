@@ -45,7 +45,7 @@ resource "azurerm_kubernetes_cluster" "cluster" {
 
   default_node_pool {
     name            = "system"
-    vm_size         = "Standard_B2s_v2"
+    vm_size         = "Standard_E2bs_v5"
     node_count      = 3
     os_disk_size_gb = 128
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes.id
@@ -85,41 +85,6 @@ resource "azurerm_kubernetes_cluster" "cluster" {
 moved {
   from = azurerm_kubernetes_cluster.cluster[0]
   to   = azurerm_kubernetes_cluster.cluster
-}
-
-# ============================================================================
-# User Node Pool — Standard_E2bs_v5 (memory-optimized burstable)
-# ============================================================================
-# Added alongside the B2s_v2 `system` pool so workloads can migrate gracefully
-# (new pods land here because the system pool is full; existing pods drain
-# off the system pool as they end naturally). The system pool stays B-family
-# for now; whether it shrinks to 1 node or also moves to E-family is a
-# follow-up decision once the migration has settled.
-#
-# vCPU/RAM ratio is 1:8 (vs B-family's 1:4) — workload is memory-heavy
-# (idle session pods reserve RAM) but CPU-idle, so this fits better.
-# E2bs_v5 keeps the burstable-credit cost shape; quota for EBSv5 family in
-# westus2 is already granted (limit 10 vCPU). No taints — the scheduler
-# fills wherever room exists, and the system pool is full so new pods will
-# land here without explicit affinity.
-# ============================================================================
-
-resource "azurerm_kubernetes_cluster_node_pool" "cluster_user" {
-  provider = azurerm.cluster
-
-  name                  = "user"
-  kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
-  vm_size               = "Standard_E2bs_v5"
-  node_count            = 3
-  os_disk_size_gb       = 128
-  vnet_subnet_id        = azurerm_subnet.cluster_aks_nodes.id
-  mode                  = "User"
-
-  upgrade_settings {
-    drain_timeout_in_minutes      = 0
-    max_surge                     = "33%"
-    node_soak_duration_in_minutes = 0
-  }
 }
 
 # ============================================================================

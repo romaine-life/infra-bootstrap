@@ -36,7 +36,7 @@ The CI workflow (`tofu.yaml`) has a bootstrap job that runs once: installs ArgoC
 
 ## Cluster Components
 
-- **AKS** (`infra-aks`) — Free tier, two pools, Azure CNI Overlay, workload identity. **`system` pool**: 3× Standard_B2s_v2 (2 vCPU, 8 GiB) — original pool, still hosts the bulk of running workloads. **`user` pool**: 3× Standard_E2bs_v5 (2 vCPU, 16 GiB) — memory-optimized burstable, added to fix the per-node memory wall that tank-operator session pods kept hitting. No taints between pools; new pods land on the user pool because the system pool is full, and existing pods drain off the system pool as they end naturally. Both pools use 128 GiB OS disks. The split is intentional during migration; the system pool may shrink or get folded once the user pool absorbs steady-state workload.
+- **AKS** (`infra-aks`) — Free tier, single `system` pool, 3× Standard_E2bs_v5 (2 vCPU, 16 GiB), Azure CNI Overlay, workload identity. The cluster intentionally runs mixed platform and app workloads in one pool; add a separate pool only for a concrete scheduling boundary such as GPU, spot, isolation, or a high-churn workload class.
 - **ACR** (`romainecr`) — Basic SKU, AcrPull for kubelet identity
 - **Envoy Gateway** — Gateway API controller + shared Gateway with HTTP/HTTPS listeners
 - **ExternalDNS** — Azure DNS via workload identity, watches HTTPRoute resources
