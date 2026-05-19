@@ -17,10 +17,9 @@
 # migrate the surviving `.cluster[0]` addresses to bare `.cluster`.
 # ============================================================================
 
-resource "azapi_resource" "cluster_ebsv5_quota" {
-  type      = "Microsoft.Capacity/resourceProviders/locations/serviceLimits@2020-10-25"
-  name      = "standardEBSv5Family"
-  parent_id = "/subscriptions/${local.cluster_subscription_id}/providers/Microsoft.Capacity/resourceProviders/Microsoft.Compute/locations/${local.cluster_resource_group_location}"
+resource "azapi_update_resource" "cluster_ebsv5_quota" {
+  type        = "Microsoft.Capacity/resourceProviders/locations/serviceLimits@2020-10-25"
+  resource_id = "/subscriptions/${local.cluster_subscription_id}/providers/Microsoft.Capacity/resourceProviders/Microsoft.Compute/locations/${local.cluster_resource_group_location}/serviceLimits/standardEBSv5Family"
 
   body = {
     properties = {
@@ -97,7 +96,7 @@ resource "azurerm_kubernetes_cluster" "cluster" {
   }
 
   depends_on = [
-    azapi_resource.cluster_ebsv5_quota,
+    azapi_update_resource.cluster_ebsv5_quota,
   ]
 }
 
