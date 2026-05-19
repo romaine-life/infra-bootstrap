@@ -17,6 +17,21 @@
 # migrate the surviving `.cluster[0]` addresses to bare `.cluster`.
 # ============================================================================
 
+resource "azapi_resource" "cluster_ebsv5_quota" {
+  type      = "Microsoft.Capacity/resourceProviders/locations/serviceLimits@2020-10-25"
+  name      = "standardEBSv5Family"
+  parent_id = "/subscriptions/${local.cluster_subscription_id}/providers/Microsoft.Capacity/resourceProviders/Microsoft.Compute/locations/${local.cluster_resource_group_location}"
+
+  body = {
+    properties = {
+      limit        = 14
+      name         = { value = "standardEBSv5Family" }
+      resourceType = "standard"
+      unit         = "Count"
+    }
+  }
+}
+
 resource "azurerm_kubernetes_cluster" "cluster" {
   provider = azurerm.cluster
 
@@ -80,6 +95,10 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     service_cidr        = "172.16.0.0/16"
     dns_service_ip      = "172.16.0.10"
   }
+
+  depends_on = [
+    azapi_resource.cluster_ebsv5_quota,
+  ]
 }
 
 moved {
