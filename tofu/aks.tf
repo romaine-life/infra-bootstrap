@@ -50,7 +50,7 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     # live pool name here until the user pool is drained and removed.
     name            = "tmp"
     vm_size         = "Standard_E2bs_v5"
-    node_count      = 2
+    node_count      = 3
     os_disk_size_gb = 128
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes.id
 
