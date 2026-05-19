@@ -44,13 +44,9 @@ resource "azurerm_kubernetes_cluster" "cluster" {
   }
 
   default_node_pool {
-    # This pool was created by the B2s -> E2bs rotation under a temporary
-    # name. Renaming a default node pool makes azurerm plan a full AKS
-    # cluster replacement, so keep it as the default pool and add a named
-    # `system` system-mode pool below.
-    name            = "tmp"
+    name            = "system"
     vm_size         = "Standard_E2bs_v5"
-    node_count      = 1
+    node_count      = 3
     os_disk_size_gb = 128
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes.id
 
@@ -87,32 +83,6 @@ resource "azurerm_kubernetes_cluster" "cluster" {
 moved {
   from = azurerm_kubernetes_cluster.cluster[0]
   to   = azurerm_kubernetes_cluster.cluster
-}
-
-# ============================================================================
-# Named System Node Pool — Standard_E2bs_v5
-# ============================================================================
-# This is the durable system capacity for the cluster. AKS/azurerm cannot safely
-# rename a default node pool in place, so `tmp` remains as the one-node default
-# system pool while regular workloads run on this named system-mode pool.
-# ============================================================================
-
-resource "azurerm_kubernetes_cluster_node_pool" "cluster_system" {
-  provider = azurerm.cluster
-
-  name                  = "system"
-  kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
-  vm_size               = "Standard_E2bs_v5"
-  node_count            = 3
-  os_disk_size_gb       = 128
-  vnet_subnet_id        = azurerm_subnet.cluster_aks_nodes.id
-  mode                  = "System"
-
-  upgrade_settings {
-    drain_timeout_in_minutes      = 0
-    max_surge                     = "33%"
-    node_soak_duration_in_minutes = 0
-  }
 }
 
 # ============================================================================
