@@ -16,21 +16,27 @@ data "azurerm_resource_group" "main" {
 }
 
 locals {
-  cluster_subscription_id             = var.cluster_subscription_id != "" ? var.cluster_subscription_id : data.azurerm_client_config.current.subscription_id
-  cluster_uses_dedicated_subscription = local.cluster_subscription_id != data.azurerm_client_config.current.subscription_id
-  cluster_resource_group_name         = local.cluster_uses_dedicated_subscription ? azurerm_resource_group.cluster[0].name : data.azurerm_resource_group.main.name
-  cluster_resource_group_location     = local.cluster_uses_dedicated_subscription ? azurerm_resource_group.cluster[0].location : data.azurerm_resource_group.main.location
-  active_aks_oidc_issuer_url          = local.cluster_uses_dedicated_subscription ? azurerm_kubernetes_cluster.cluster[0].oidc_issuer_url : azurerm_kubernetes_cluster.main[0].oidc_issuer_url
-  active_aks_cluster_id               = local.cluster_uses_dedicated_subscription ? azurerm_kubernetes_cluster.cluster[0].id : azurerm_kubernetes_cluster.main[0].id
-  active_aks_cluster_name             = local.cluster_uses_dedicated_subscription ? azurerm_kubernetes_cluster.cluster[0].name : azurerm_kubernetes_cluster.main[0].name
+  # `cluster_subscription_id` is still emitted as a `github_actions_variable`
+  # for downstream app workflows (see app/main.tf). The `var.* != ""` shape is
+  # preserved because the variable is optional from the workflow's POV.
+  cluster_subscription_id         = var.cluster_subscription_id != "" ? var.cluster_subscription_id : data.azurerm_client_config.current.subscription_id
+  cluster_resource_group_name     = azurerm_resource_group.cluster.name
+  cluster_resource_group_location = azurerm_resource_group.cluster.location
+  active_aks_oidc_issuer_url      = azurerm_kubernetes_cluster.cluster.oidc_issuer_url
+  active_aks_cluster_id           = azurerm_kubernetes_cluster.cluster.id
+  active_aks_cluster_name         = azurerm_kubernetes_cluster.cluster.name
 }
 
 resource "azurerm_resource_group" "cluster" {
   provider = azurerm.cluster
-  count    = local.cluster_uses_dedicated_subscription ? 1 : 0
 
   name     = var.cluster_resource_group_name
   location = data.azurerm_resource_group.main.location
+}
+
+moved {
+  from = azurerm_resource_group.cluster[0]
+  to   = azurerm_resource_group.cluster
 }
 
 # ============================================================================

@@ -23,7 +23,6 @@ resource "azurerm_subnet" "aks_nodes" {
 
 resource "azurerm_virtual_network" "cluster" {
   provider = azurerm.cluster
-  count    = local.cluster_uses_dedicated_subscription ? 1 : 0
 
   name                = "infra-vnet"
   resource_group_name = local.cluster_resource_group_name
@@ -31,12 +30,21 @@ resource "azurerm_virtual_network" "cluster" {
   address_space       = ["10.0.0.0/16"]
 }
 
+moved {
+  from = azurerm_virtual_network.cluster[0]
+  to   = azurerm_virtual_network.cluster
+}
+
 resource "azurerm_subnet" "cluster_aks_nodes" {
   provider = azurerm.cluster
-  count    = local.cluster_uses_dedicated_subscription ? 1 : 0
 
   name                 = "aks-nodes"
   resource_group_name  = local.cluster_resource_group_name
-  virtual_network_name = azurerm_virtual_network.cluster[0].name
+  virtual_network_name = azurerm_virtual_network.cluster.name
   address_prefixes     = ["10.0.0.0/22"]
+}
+
+moved {
+  from = azurerm_subnet.cluster_aks_nodes[0]
+  to   = azurerm_subnet.cluster_aks_nodes
 }
