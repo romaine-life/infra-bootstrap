@@ -103,7 +103,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "cluster_system" {
   name                  = "system"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
   vm_size               = "Standard_E2bs_v5"
-  node_count            = 2
+  node_count            = 3
   os_disk_size_gb       = 128
   vnet_subnet_id        = azurerm_subnet.cluster_aks_nodes.id
   mode                  = "System"
