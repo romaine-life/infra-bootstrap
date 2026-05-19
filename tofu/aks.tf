@@ -50,7 +50,7 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     # `system` system-mode pool below.
     name            = "tmp"
     vm_size         = "Standard_E2bs_v5"
-    node_count      = 3
+    node_count      = 1
     os_disk_size_gb = 128
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes.id
 
