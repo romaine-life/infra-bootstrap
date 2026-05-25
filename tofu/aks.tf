@@ -49,12 +49,17 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     os_disk_size_gb = 128
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes.id
 
-    # Autoscale 2-3 nodes. Aggregate memory baseline (~25 GiB used across the
-    # pool) fits in 2 nodes (32 GiB) with room for normal churn; the third
-    # only matters under load spikes or during node maintenance. The
-    # autoscaler removes the third when idle and adds it back under pressure.
+    # Autoscale 3-3 nodes. min_count was 2 until 2026-05-25 — bumped to 3
+    # so the NATS chart's required-hostname podAntiAffinity (R=3 stream,
+    # one replica per node, see k8s/nats/values.yaml) can always be
+    # satisfied. With min_count=2, an off-hours scale-down would strand
+    # one NATS replica Pending and immediately produce the same
+    # JetStream quorum-loss shape the 2026-05-25 incident showed.
+    # max_count stays at 3: a future raise is the lever to absorb
+    # honest session-pod CPU pressure once session pods get real
+    # CPU requests, which is a separate change.
     auto_scaling_enabled = true
-    min_count            = 2
+    min_count            = 3
     max_count            = 3
 
     # AKS auto-populates upgrade_settings on the node pool; declare these
