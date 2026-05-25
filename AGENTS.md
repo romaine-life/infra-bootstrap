@@ -28,7 +28,7 @@ Each component that needs config resources alongside its Helm chart gets a local
 
 ### Secrets Flow
 
-Tofu outputs → Key Vault → ExternalSecrets Operator → K8s Secrets. No manual `kubectl create secret`. The ClusterSecretStore (`romaine-kv`) uses workload identity on the shared managed identity.
+Tofu outputs → Key Vault → ExternalSecrets Operator → K8s Secrets. No manual `kubectl create secret`. `romaine-kv` is the platform/shared store; app-owned secrets belong in Key Vaults provisioned by the app repos, with matching External Secrets stores defined alongside the app chart. CI app registrations created here get subscription-scope Key Vault Administrator in both the workload and cluster subscriptions.
 
 ### Bootstrap
 
