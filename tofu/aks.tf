@@ -46,9 +46,16 @@ resource "azurerm_kubernetes_cluster" "cluster" {
   default_node_pool {
     name            = "system"
     vm_size         = "Standard_E2bs_v5"
-    node_count      = 3
     os_disk_size_gb = 128
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes.id
+
+    # Autoscale 2-3 nodes. Aggregate memory baseline (~25 GiB used across the
+    # pool) fits in 2 nodes (32 GiB) with room for normal churn; the third
+    # only matters under load spikes or during node maintenance. The
+    # autoscaler removes the third when idle and adds it back under pressure.
+    auto_scaling_enabled = true
+    min_count            = 2
+    max_count            = 3
 
     # AKS auto-populates upgrade_settings on the node pool; declare these
     # explicitly so tofu doesn't see drift and try to unset
@@ -57,13 +64,12 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     # max_surge="33%" matches Microsoft's documented recommendation for
     # production system pools
     # (https://learn.microsoft.com/en-us/azure/aks/upgrade-cluster#customize-node-surge-upgrade).
-    # On the current 3-node pool, 33% rounds up to 1 surge node, same as
-    # the previous 10% — no behavior change at this size. The win shows
-    # up if/when the pool scales: 6 nodes → 2 surge instead of 1, 10
-    # nodes → 4 surge instead of 1. Upgrade wall-clock drops roughly
-    # linearly. The doubling-cost concern of higher values like "100%"
-    # is avoided because surge nodes only exist for the duration of one
-    # node's drain (single-digit minutes).
+    # At 2-3 nodes 33% rounds up to 1 surge node, same as the previous 10%
+    # — no behavior change at this size. The win shows up if/when the pool
+    # scales: 6 nodes → 2 surge instead of 1, 10 nodes → 4 surge instead of
+    # 1. Upgrade wall-clock drops roughly linearly. The doubling-cost
+    # concern of higher values like "100%" is avoided because surge nodes
+    # only exist for the duration of one node's drain (single-digit minutes).
     upgrade_settings {
       drain_timeout_in_minutes      = 0
       max_surge                     = "33%"
