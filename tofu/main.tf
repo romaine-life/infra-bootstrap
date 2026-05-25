@@ -161,11 +161,13 @@ locals {
   }
 
   # Apps whose CI SP runs its own `tofu` pipeline against the shared
-  # `nelsontofu` state backend. Membership grants the full opt-in set
-  # required to plan + apply: Storage Blob Data Contributor (tfstate),
-  # Subscription Contributor (ARM resources), Role Based Access Control
-  # Administrator (role assignment writes), Key Vault Secrets Officer
-  # (data-plane KV writes), plus the TFSTATE_STORAGE_ACCOUNT repo var.
+  # `nelsontofu` state backend. Membership grants the opt-in set required to
+  # plan + apply ordinary app infrastructure: Storage Blob Data Contributor
+  # (tfstate), Subscription Contributor (ARM resources), Role Based Access
+  # Control Administrator (role assignment writes), plus the
+  # TFSTATE_STORAGE_ACCOUNT repo var. Key Vault data-plane access is granted
+  # to every infra-bootstrap-created CI principal at subscription scope in
+  # the app module.
   #
   # Listed explicitly rather than derived from `!ci_only`: "owns its own
   # tofu" and "is a web app" are independent axes. A backend service
@@ -327,7 +329,6 @@ module "app" {
   tfstate_access                 = contains(local.runs_own_tofu_apps, each.key)
   manages_subscription_resources = contains(local.runs_own_tofu_apps, each.key)
   manages_role_assignments       = contains(local.runs_own_tofu_apps, each.key)
-  manages_keyvault_secrets       = contains(local.runs_own_tofu_apps, each.key)
   default_branch                 = lookup(local.app_default_branch, each.key, "main")
   topics                         = lookup(local.app_topics, each.key, [])
   pages_branch                   = lookup(local.app_pages_branch, each.key, "")

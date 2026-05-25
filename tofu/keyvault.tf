@@ -1,9 +1,9 @@
 # ============================================================================
-# Azure Key Vault (data source)
+# Azure Key Vault
 # ============================================================================
-# The Key Vault is created by the bootstrap script (06-keyvault.ps1) and
-# referenced here as a data source — the same pattern used for the resource
-# group. RBAC authorization is used for access control.
+# The platform/shared Key Vault is created by the bootstrap script
+# (06-keyvault.ps1). App-owned Key Vaults belong in the app repos that own
+# those secrets.
 
 data "azurerm_key_vault" "main" {
   name                = "romaine-kv"

@@ -81,12 +81,6 @@ variable "manages_role_assignments" {
   default     = false
 }
 
-variable "manages_keyvault_secrets" {
-  description = "When true, grant Key Vault Secrets Officer (read+write data-plane) on `var.key_vault_id`. When false (default), the `ci_only` path grants Key Vault Secrets User (read-only) instead. Required for any repo whose `tofu` writes KV secrets."
-  type        = bool
-  default     = false
-}
-
 variable "topics" {
   description = "GitHub repository topics for categorization and discovery."
   type        = list(string)
@@ -193,22 +187,21 @@ resource "azuread_service_principal" "app" {
   owners = [data.azuread_client_config.current.object_id]
 }
 
-# Key Vault Secrets User (read-only) — the default for any app that hasn't
-# opted in to managing secrets. Mutually exclusive with the Officer grant
-# below; opting `manages_keyvault_secrets = true` swaps User for Officer.
-resource "azurerm_role_assignment" "keyvault_secrets_user" {
-  count                = var.manages_keyvault_secrets ? 0 : 1
-  scope                = var.key_vault_id
-  role_definition_name = "Key Vault Secrets User"
+# Key Vault Administrator at subscription scope. These app registrations are
+# CI principals; app repos own their app-specific vaults and should not need a
+# per-vault bootstrap grant before writing secrets. Runtime identities
+# (External Secrets, pods, MCP servers, etc.) still get narrow app-owned grants
+# in the repo that provisions the vault.
+resource "azurerm_role_assignment" "keyvault_admin_workload_subscription" {
+  scope                = "/subscriptions/${var.arm_subscription_id}"
+  role_definition_name = "Key Vault Administrator"
   principal_id         = azuread_service_principal.app.object_id
 }
 
-# Key Vault Secrets Officer (read+write data-plane). Opt-in via
-# var.manages_keyvault_secrets.
-resource "azurerm_role_assignment" "keyvault_secrets_officer" {
-  count                = var.manages_keyvault_secrets ? 1 : 0
-  scope                = var.key_vault_id
-  role_definition_name = "Key Vault Secrets Officer"
+resource "azurerm_role_assignment" "keyvault_admin_cluster_subscription" {
+  provider             = azurerm.cluster
+  scope                = "/subscriptions/${var.cluster_subscription_id}"
+  role_definition_name = "Key Vault Administrator"
   principal_id         = azuread_service_principal.app.object_id
 }
 
