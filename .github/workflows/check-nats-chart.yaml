@@ -1,0 +1,25 @@
+name: NATS chart guard
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "k8s/nats/**"
+      - "scripts/check-nats-chart.mjs"
+      - ".github/workflows/check-nats-chart.yaml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-nats-chart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "20"
+      - name: Run NATS chart guard
+        run: node scripts/check-nats-chart.mjs

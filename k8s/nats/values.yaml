@@ -3,22 +3,55 @@
 # JetStream is configured memory-only — no PVCs, no per-VM data-disk
 # attachment cost. tank-operator treats NATS as live transport for the
 # session command/event fabric per docs/product-inspirations.md
-# (durable state lives in Cosmos; NATS just wakes clients/runners).
+# (durable state lives in Postgres; NATS just wakes clients/runners).
 # Memory-only matches that durability scope: streams survive
 # orchestrator rollouts and runner-process restarts inside an
-# otherwise live session pod, and lose state only when both NATS pods
-# restart simultaneously — outside the inspirations doc's durability
-# boundary.
+# otherwise live session pod, and lose state only when a Raft-quorum
+# majority of NATS replicas restart simultaneously — outside the
+# inspirations doc's durability boundary.
 #
 # memoryStore.maxSize caps each replica's JetStream RAM use to prevent
 # a runaway producer from OOM-killing the pod. At ~256 MiB per replica
-# and 2 replicas, total JetStream memory budget is ~512 MiB cluster-wide.
+# and 3 replicas, total JetStream memory budget is ~768 MiB cluster-wide.
+#
+# === 2026-05-25 incident hardening ===
+#
+# The 2026-05-25 chat-submission outage produced sustained `nats: no
+# response from stream` on every tank-operator submit_turn for ~10
+# minutes. Root cause chain:
+#
+#   1. Both NATS pods co-tenanted on a CPU-saturated AKS node
+#      (BestEffort QoS; no anti-affinity).
+#   2. Linux CFS deprioritized NATS under contention; readloop
+#      processing time climbed to 2-3s on one replica.
+#   3. R=2 JetStream Raft requires both replicas to ack writes
+#      (write quorum = 2 of 2; no tiebreaker). One slow replica
+#      halted the entire stream.
+#   4. js.Publish on the orchestrator returned ErrNoStreamResponse;
+#      every chat submission failed for the duration.
+#
+# The three changes below close all three structural defects:
+#
+#   - cluster.replicas: 3 — Raft requires R ∈ {1, 3, 5}; R=2 is the
+#     worst choice (costs of clustering + fragility of single-replica).
+#     R=3 tolerates one slow / dead member with quorum=2.
+#   - container.resources: Burstable QoS guarantees NATS a CPU slice
+#     under contention; CFS no longer treats it as last-priority.
+#   - podTemplate.topologySpreadConstraints with whenUnsatisfiable=
+#     DoNotSchedule on kubernetes.io/hostname: required spread across
+#     nodes. The AKS pool runs min_count=3 (see tofu/aks.tf) so this
+#     can always be satisfied; a NATS pod would rather sit Pending
+#     than co-tenant with another NATS replica.
+#
+# Pair-with: tank-operator chart sets sessionBus.streamReplicas: 3
+# so the stream is created at the matching Raft size. Both must move
+# together; neither half works alone.
 nats:
   fullnameOverride: tank-nats
   config:
     cluster:
       enabled: true
-      replicas: 2
+      replicas: 3
     jetstream:
       enabled: true
       fileStore:
@@ -39,5 +72,27 @@ nats:
           secretKeyRef:
             name: tank-nats-auth
             key: token
+    # Burstable QoS: requests guarantee CPU/memory under contention so
+    # the Linux scheduler does not deprioritize NATS the way it did on
+    # 2026-05-25. CPU request sized at ~10x observed steady-state
+    # (7-9m); memory request at observed working set (~500 MiB at
+    # steady state plus the 256 MiB JetStream memoryStore ceiling).
+    # Limits intentionally omitted — Raft heartbeats must not be
+    # CPU-throttled under brief load spikes; the pod's wall-clock CPU
+    # is bounded by the host anyway.
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+  podTemplate:
+    # whenUnsatisfiable=DoNotSchedule is the load-bearing word. The
+    # cluster has min_count=3 nodes (tofu/aks.tf), so 3 NATS replicas
+    # always have a one-per-node home; a NATS pod sits Pending rather
+    # than co-tenant with another NATS replica. Required (vs preferred)
+    # is what prevents the 2026-05-25 co-tenancy shape from recurring.
+    topologySpreadConstraints:
+      kubernetes.io/hostname:
+        maxSkew: 1
+        whenUnsatisfiable: DoNotSchedule
   promExporter:
     enabled: true

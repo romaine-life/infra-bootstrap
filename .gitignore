@@ -38,3 +38,8 @@ terraform.rc
 
 # Ignore bootstrap credential config files
 bootstrap/*.config
+
+# Local helm dependency artifacts (we render charts locally for
+# verification; the actual chart pulls happen in ArgoCD).
+**/charts/*.tgz
+**/Chart.lock
