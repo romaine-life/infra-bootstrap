@@ -49,18 +49,21 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     os_disk_size_gb = 128
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes.id
 
-    # Autoscale 3-3 nodes. min_count was 2 until 2026-05-25 — bumped to 3
+    # Autoscale 3-4 nodes. min_count was 2 until 2026-05-25 — bumped to 3
     # so the NATS chart's required-hostname podAntiAffinity (R=3 stream,
     # one replica per node, see k8s/nats/values.yaml) can always be
     # satisfied. With min_count=2, an off-hours scale-down would strand
     # one NATS replica Pending and immediately produce the same
     # JetStream quorum-loss shape the 2026-05-25 incident showed.
-    # max_count stays at 3: a future raise is the lever to absorb
-    # honest session-pod CPU pressure once session pods get real
-    # CPU requests, which is a separate change.
+    # max_count bumped from 3 to 4 on 2026-05-25 to absorb the
+    # glimmung Postgres-migration rolling-deploy CPU pressure: the
+    # 2h foundation pod (nelsong6/glimmung#575) couldn't schedule
+    # because all 3 nodes were at CPU limit and the autoscaler was
+    # already at max group size. 4 nodes gives the scheduler
+    # headroom for the rollout surge plus the existing workload.
     auto_scaling_enabled = true
     min_count            = 3
-    max_count            = 3
+    max_count            = 4
 
     # AKS auto-populates upgrade_settings on the node pool; declare these
     # explicitly so tofu doesn't see drift and try to unset
