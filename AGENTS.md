@@ -42,7 +42,7 @@ The CI workflow (`tofu.yaml`) has a bootstrap job that runs once: installs ArgoC
 - **ExternalDNS** — Azure DNS via workload identity, watches HTTPRoute resources
 - **cert-manager** — Let's Encrypt HTTP-01 via Gateway API
 - **ExternalSecrets** — ClusterSecretStore for Key Vault, workload identity
-- **ArgoCD** — GitOps, dex SSO (Microsoft Entra), Kustomize self-management
+- **ArgoCD** — GitOps, dex SSO federated to auth.romaine.life, Kustomize self-management
 - **ServerSideApply** — Default sync option for all apps (large CRDs, AKS-injected labels)
 
 ## App Onboarding
@@ -51,7 +51,7 @@ The app module (`tofu/app/main.tf`) creates per-app: GitHub repo, Azure AD app r
 
 ## SSO
 
-Dex with Microsoft connector (`tenant: common`, any Microsoft account). Scopes: `openid profile email user.read`. RBAC maps email to admin role. Admin fallback via local credentials.
+Dex federates human SSO to **auth.romaine.life** (OIDC connector `id: romaine`, `getUserInfo: true`, `insecureEnableGroups: true`) — the single source of truth for who gets in across every romaine.life app. auth.romaine.life issues a `role` claim mirrored into a `groups` array; Dex forwards `groups`, and ArgoCD RBAC (`scopes: '[groups]'`) maps `g, admin, role:admin`. Grant/revoke admin by changing a user's role in auth.romaine.life — there is no email list in this repo. The separate `aks-sa` Dex connector (projected-SA-token federation for in-cluster MCP servers) is unchanged. Admin fallback via local credentials.
 
 ## Related Repos
 

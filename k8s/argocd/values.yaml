@@ -19,19 +19,35 @@ configs:
     timeout.reconciliation: 5m
     dex.config: |
       connectors:
-        - type: microsoft
-          id: microsoft
-          name: Microsoft
+        # Human SSO via auth.romaine.life — the single source of truth for
+        # who gets in (and at what role) across every romaine.life app.
+        # Dex autodiscovers from the root discovery doc (issuer-match is
+        # exact, hence the bare origin as issuer) and pulls the `role`/
+        # `groups` claims from /oauth2/userinfo, which the RBAC block below
+        # maps to ArgoCD roles. Replaces the old dedicated Microsoft app
+        # registration + static per-email admin list. The shared OIDC
+        # client secret lives in ng6-auth (see argocd-dex-romaine-
+        # externalsecret.yaml).
+        - type: oidc
+          id: romaine
+          name: romaine.life
           config:
-            clientID: $dex.microsoft.clientID
-            clientSecret: $dex.microsoft.clientSecret
+            issuer: https://auth.romaine.life
+            clientID: argocd
+            clientSecret: $dex.romaine.clientSecret
             redirectURI: https://argocd.romaine.life/api/dex/callback
-            tenant: common
             scopes:
               - openid
               - profile
               - email
-              - user.read
+            # role/groups are surfaced on the userinfo response, not the
+            # base id_token, so Dex must call the userinfo endpoint.
+            getUserInfo: true
+            # Dex's oidc connector drops the upstream `groups` claim unless
+            # this is set — without it, RBAC's `g, admin, role:admin` never
+            # matches and every SSO user falls back to readonly.
+            insecureEnableGroups: true
+            insecureSkipEmailVerified: true
         # Federate AKS-issued projected SA tokens. In-cluster MCP servers
         # mint a SA token with aud=argocd-mcp and exchange it for an ArgoCD
         # bearer via /api/dex/token (grant_type=token-exchange,
@@ -49,13 +65,18 @@ configs:
             insecureSkipEmailVerified: true
             userIDKey: sub
             userNameKey: sub
-  # RBAC — default readonly, map admin by email
+  # RBAC — default readonly; admin is granted by auth.romaine.life, not by
+  # a list maintained here. auth.romaine.life issues a `role` claim that the
+  # OIDC provider mirrors into a `groups` array; Dex forwards `groups`, and
+  # the single mapping below grants admin to anyone auth.romaine.life marks
+  # role=admin. To grant/revoke an admin, change their role in
+  # auth.romaine.life — there is no email list in this repo anymore. The
+  # ArgoCD local `admin` account remains the break-glass if SSO is down.
   rbac:
     policy.default: role:readonly
-    scopes: '[email]'
+    scopes: '[groups]'
     policy.csv: |
-      g, nelson-devops-project@outlook.com, role:admin
-      g, brenden.owens39@gmail.com, role:admin
+      g, admin, role:admin
       # mcp-argocd's projected SA token federates through the aks-sa Dex
       # connector. Dex re-issues with `sub` set to a base64url protobuf of
       # (connector_id, user_id) — that's the literal blob below, NOT the

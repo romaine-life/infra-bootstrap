@@ -3,7 +3,7 @@
 #   - Gateway main (platform HTTP listener on 80 — also the source ExternalDNS
 #     reads to create the A record; ExternalDNS v0.20 doesn't yet follow
 #     XListenerSet parents, tracked by external-dns#5694)
-# Auth handled by ArgoCD's built-in OIDC via dex (Microsoft Entra).
+# Auth handled by ArgoCD's built-in OIDC via dex, federated to auth.romaine.life.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
