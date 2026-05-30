@@ -39,6 +39,16 @@ configs:
         - openid
         - profile
         - email
+      # Human login id_tokens carry aud=clientID ("argocd"). The mcp-argocd
+      # service identity authenticates to the API with an auth.romaine.life
+      # role=service JWT minted via /api/auth/exchange/k8s, which carries
+      # aud=<issuer>=https://auth.romaine.life. argocd-server verifies any
+      # non-"argocd"-issuer bearer against this provider's JWKS
+      # (sessionmanager.VerifyToken), but only if the token's aud is allowed —
+      # so both audiences must be listed.
+      allowedAudiences:
+        - argocd
+        - https://auth.romaine.life
     # Dex now carries ONLY the aks-sa connector — it is no longer in the human
     # login path. In-cluster MCP servers (mcp-argocd) mint a projected SA
     # token with aud=argocd-mcp and exchange it for an ArgoCD bearer via
@@ -68,16 +78,23 @@ configs:
   # The ArgoCD local `admin` account remains the break-glass if SSO is down.
   rbac:
     policy.default: role:readonly
-    scopes: '[groups]'
+    # `groups` is what human SSO tokens carry (mirrored from the platform
+    # role); `sub` is how the mcp-argocd service identity is matched — its
+    # auth.romaine.life role=service JWT has no groups but a stable
+    # sub=svc:mcp-argocd:mcp-argocd.
+    scopes: '[groups, sub]'
     policy.csv: |
       g, admin, role:admin
-      # mcp-argocd's projected SA token federates through the aks-sa Dex
-      # connector. Dex re-issues with `sub` set to a base64url protobuf of
-      # (connector_id, user_id) — that's the literal blob below, NOT the
-      # bare `system:serviceaccount:mcp-argocd:mcp-argocd`. The previous
-      # CSV used the SA name and was effectively dead code (the readonly
-      # default was what allowed `applications, get` calls; `sync` was
-      # denied for the same reason). Tracked upstream: dexidp/dex#1577.
+      # mcp-argocd authenticates to the Argo CD API with an auth.romaine.life
+      # role=service JWT (minted via /api/auth/exchange/k8s); argocd-server
+      # verifies it against the auth.romaine.life JWKS and matches its stable
+      # subject here. This is the post-migration identity.
+      g, svc:mcp-argocd:mcp-argocd, role:mcp-argocd
+      # MIGRATION WINDOW (delete in Stage 3, once mcp-argocd has switched to
+      # the romaine exchange and Dex is removed): the legacy Dex aks-sa path.
+      # Dex re-issues `sub` as a base64url protobuf of (connector_id,
+      # user_id) — that's the literal blob below. Tracked upstream:
+      # dexidp/dex#1577.
       g, CitzeXN0ZW06c2VydmljZWFjY291bnQ6bWNwLWFyZ29jZDptY3AtYXJnb2NkEgZha3Mtc2E, role:mcp-argocd
       p, role:mcp-argocd, applications, get, */*, allow
       p, role:mcp-argocd, applications, sync, */*, allow
