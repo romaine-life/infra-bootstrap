@@ -42,7 +42,7 @@ The CI workflow (`tofu.yaml`) has a bootstrap job that runs once: installs ArgoC
 - **ExternalDNS** — Azure DNS via workload identity, watches HTTPRoute resources
 - **cert-manager** — Let's Encrypt HTTP-01 via Gateway API
 - **ExternalSecrets** — ClusterSecretStore for Key Vault, workload identity
-- **ArgoCD** — GitOps, dex SSO federated to auth.romaine.life, Kustomize self-management
+- **ArgoCD** — GitOps, native OIDC SSO direct to auth.romaine.life (Dex retained only for mcp-argocd), Kustomize self-management
 - **ServerSideApply** — Default sync option for all apps (large CRDs, AKS-injected labels)
 
 ## App Onboarding
@@ -55,7 +55,7 @@ For values produced by tofu that an internal workflow needs (SP client IDs, stor
 
 ## SSO
 
-Dex federates human SSO to **auth.romaine.life** (OIDC connector `id: romaine`, `getUserInfo: true`, `insecureEnableGroups: true`) — the single source of truth for who gets in across every romaine.life app. auth.romaine.life issues a `role` claim mirrored into a `groups` array; Dex forwards `groups`, and ArgoCD RBAC (`scopes: '[groups]'`) maps `g, admin, role:admin`. Grant/revoke admin by changing a user's role in auth.romaine.life — there is no email list in this repo. The separate `aks-sa` Dex connector (projected-SA-token federation for in-cluster MCP servers) is unchanged. Admin fallback via local credentials.
+ArgoCD authenticates humans as a **native OIDC relying party** directly to **auth.romaine.life** (`oidc.config`, public client + PKCE via `enablePKCEAuthentication`, no client secret — same shape as Grafana), not proxied through Dex. auth.romaine.life is the single source of truth for who gets in across every romaine.life app; it mirrors each user's platform `role` into a `groups` claim on the id_token, and ArgoCD RBAC (`scopes: '[groups]'`) maps `g, admin, role:admin`. Grant/revoke admin by changing a user's role in auth.romaine.life — there is no email list in this repo. Dex stays deployed **only** for the `aks-sa` connector (projected-SA-token exchange for in-cluster MCP servers like mcp-argocd) — it is not in the human login path. Admin fallback via local credentials.
 
 ## Related Repos
 

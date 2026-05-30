@@ -63,12 +63,12 @@ resource "azurerm_key_vault_secret" "microsoft_oauth_client_secret" {
 
 # ArgoCD's dedicated "ArgoCD" Microsoft app registration + its OIDC client
 # secrets (argocd-oidc-client-id/secret, formerly here and in
-# platform-keyvaults.tf) were retired 2026-05-30. ArgoCD human SSO now
-# federates through auth.romaine.life's OIDC provider via Dex (see
-# k8s/argocd/values.yaml + argocd-dex-romaine-externalsecret.yaml), so the
-# direct Microsoft connector and its credentials have no remaining consumer.
-# Deleting the resource blocks destroys the app registration, its password,
-# and both KV-secret copies on the next apply.
+# platform-keyvaults.tf) were retired 2026-05-30. ArgoCD human SSO now goes
+# directly to auth.romaine.life as a native OIDC public client with PKCE — no
+# secret at all (see k8s/argocd/values.yaml oidc.config). The old Microsoft
+# app registration and its credentials have no remaining consumer. Deleting
+# the resource blocks destroys the app registration, its password, and both
+# KV-secret copies on the next apply.
 
 # ============================================================================
 # Google "Sign in with Google" (shared across all projects)

@@ -13,4 +13,3 @@ resources:
   - argocd-route.yaml
   - argocd-secretstore.yaml
   - argocd-github-app-externalsecret.yaml
-  - argocd-dex-romaine-externalsecret.yaml

@@ -345,12 +345,10 @@ jobs:
             argocd.argoproj.io/secret-type=repository \
             --overwrite
 
-      # ArgoCD human SSO credentials are no longer seeded at bootstrap. SSO
-      # federates through auth.romaine.life, and the shared OIDC client
-      # secret reaches argocd-secret via the External Secrets Operator
-      # (k8s/argocd/argocd-dex-romaine-externalsecret.yaml) once it
-      # reconciles post-install. The local `admin` account is the
-      # break-glass until then.
+      # ArgoCD human SSO credentials are no longer seeded at bootstrap. SSO is
+      # native OIDC direct to auth.romaine.life as a public client with PKCE
+      # (k8s/argocd/values.yaml oidc.config) — there is no client secret to
+      # seed. The local `admin` account is the break-glass until ArgoCD is up.
 
       # ── Hand off to ArgoCD ───────────────────────────────────────
       # Apply all Application manifests — ArgoCD auto-syncs each one.
