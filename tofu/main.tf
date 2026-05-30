@@ -116,7 +116,7 @@ locals {
   # Apps deployed on AKS — gives the app SP AcrPush on romainecr (for CI to
   # push images). Expand as each app migrates off the shared api onto its
   # own K8s Deployment.
-  k8s_apps = toset(["ambience", "auth", "house-hunt", "kill-me", "fzt-frontend", "my-homepage", "diagrams", "llm-explorer", "shows", "tank-operator", "glimmung", "hermes", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "void-drifter-infra"])
+  k8s_apps = toset(["ambience", "auth", "emma-birthday", "house-hunt", "kill-me", "fzt-frontend", "my-homepage", "diagrams", "llm-explorer", "shows", "tank-operator", "glimmung", "hermes", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "void-drifter-infra"])
 
   # Subset of k8s_apps whose pods federate to infra-shared-identity via
   # `system:serviceaccount:<app>:infra-shared`. Empty: every app has
@@ -297,6 +297,7 @@ module "app" {
     "card-utility-stats",
     "diagrams",
     "eight-queens",
+    "emma-birthday",
     "fzt",
     "fzt-automate",
     "fzt-browser",
