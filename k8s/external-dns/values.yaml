@@ -2,7 +2,7 @@ external-dns:
   provider:
     name: azure
   txtOwnerId: infra-aks-new
-  policy: upsert-only
+  policy: sync
   sources:
     - crd
     - gateway-httproute
