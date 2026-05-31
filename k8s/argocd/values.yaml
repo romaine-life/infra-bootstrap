@@ -27,9 +27,9 @@ configs:
     # (issuer = bare origin, matched exactly). `groups` arrives on the
     # id_token (auth mirrors the platform `role` into it); the RBAC block maps
     # it. Replaces the old dedicated Microsoft app registration + static
-    # per-email admin list. When both oidc.config and dex.config are set,
-    # ArgoCD uses oidc.config for human login; Dex keeps running for its
-    # connectors (below).
+    # per-email admin list. This is now the ONLY SSO mechanism — Dex is
+    # retired (dex.enabled: false below), and mcp-argocd authenticates through
+    # this same provider with a role=service token (see allowedAudiences).
     oidc.config: |
       name: romaine.life
       issuer: https://auth.romaine.life
@@ -49,26 +49,10 @@ configs:
       allowedAudiences:
         - argocd
         - https://auth.romaine.life
-    # Dex now carries ONLY the aks-sa connector — it is no longer in the human
-    # login path. In-cluster MCP servers (mcp-argocd) mint a projected SA
-    # token with aud=argocd-mcp and exchange it for an ArgoCD bearer via
-    # /api/dex/token (grant_type=token-exchange, connector_id=aks-sa). No
-    # static API tokens leave the cluster.
-    dex.config: |
-      connectors:
-        - type: oidc
-          id: aks-sa
-          name: AKS Service Account
-          config:
-            issuer: https://westus2.oic.prod-aks.azure.com/2236b5e4-81d2-4d82-bde5-17b1037999ea/5aced6d5-4299-421b-84a9-6638aebbf4f0/
-            clientID: argocd-mcp
-            clientSecret: unused-public-client
-            scopes:
-              - openid
-            getUserInfo: false
-            insecureSkipEmailVerified: true
-            userIDKey: sub
-            userNameKey: sub
+    # No dex.config. Dex is fully retired: human SSO is native oidc.config
+    # (above) and mcp-argocd now authenticates with an auth.romaine.life
+    # role=service JWT (verified via oidc.config), so the bundled Dex has no
+    # remaining consumer. The argocd-dex-server Deployment is disabled below.
   # RBAC — default readonly; admin is granted by auth.romaine.life, not by a
   # list maintained here. auth.romaine.life mirrors each user's platform
   # `role` into a `groups` claim on the id_token; `scopes: '[groups]'` makes
@@ -88,14 +72,8 @@ configs:
       # mcp-argocd authenticates to the Argo CD API with an auth.romaine.life
       # role=service JWT (minted via /api/auth/exchange/k8s); argocd-server
       # verifies it against the auth.romaine.life JWKS and matches its stable
-      # subject here. This is the post-migration identity.
+      # subject here.
       g, svc:mcp-argocd:mcp-argocd, role:mcp-argocd
-      # MIGRATION WINDOW (delete in Stage 3, once mcp-argocd has switched to
-      # the romaine exchange and Dex is removed): the legacy Dex aks-sa path.
-      # Dex re-issues `sub` as a base64url protobuf of (connector_id,
-      # user_id) — that's the literal blob below. Tracked upstream:
-      # dexidp/dex#1577.
-      g, CitzeXN0ZW06c2VydmljZWFjY291bnQ6bWNwLWFyZ29jZDptY3AtYXJnb2NkEgZha3Mtc2E, role:mcp-argocd
       p, role:mcp-argocd, applications, get, */*, allow
       p, role:mcp-argocd, applications, sync, */*, allow
       p, role:mcp-argocd, projects, get, *, allow
@@ -118,9 +96,11 @@ repoServer:
 redis:
   enabled: true
 
-# Dex handles SSO — supports multiple identity providers
+# Dex is retired. Human SSO is native oidc.config and mcp-argocd uses an
+# auth.romaine.life role=service JWT — nothing consumes Dex, so don't deploy
+# argocd-dex-server.
 dex:
-  enabled: true
+  enabled: false
 
 # Disable notifications (can enable later)
 notifications:

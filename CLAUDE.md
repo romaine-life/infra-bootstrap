@@ -42,7 +42,7 @@ The CI workflow (`tofu.yaml`) has a bootstrap job that runs once: installs ArgoC
 - **ExternalDNS** — Azure DNS via workload identity, watches HTTPRoute resources
 - **cert-manager** — Let's Encrypt HTTP-01 via Gateway API
 - **ExternalSecrets** — ClusterSecretStore for Key Vault, workload identity
-- **ArgoCD** — GitOps, native OIDC SSO direct to auth.romaine.life (Dex retained only for mcp-argocd), Kustomize self-management
+- **ArgoCD** — GitOps, native OIDC SSO direct to auth.romaine.life (no Dex), Kustomize self-management
 - **ServerSideApply** — Default sync option for all apps (large CRDs, AKS-injected labels)
 
 ## App Onboarding
@@ -55,7 +55,7 @@ For values produced by tofu that an internal workflow needs (SP client IDs, stor
 
 ## SSO
 
-ArgoCD authenticates humans as a **native OIDC relying party** directly to **auth.romaine.life** (`oidc.config`, public client + PKCE via `enablePKCEAuthentication`, no client secret — same shape as Grafana), not proxied through Dex. auth.romaine.life is the single source of truth for who gets in across every romaine.life app; it mirrors each user's platform `role` into a `groups` claim on the id_token, and ArgoCD RBAC (`scopes: '[groups]'`) maps `g, admin, role:admin`. Grant/revoke admin by changing a user's role in auth.romaine.life — there is no email list in this repo. Dex stays deployed **only** for the `aks-sa` connector (projected-SA-token exchange for in-cluster MCP servers like mcp-argocd) — it is not in the human login path. Admin fallback via local credentials.
+ArgoCD authenticates humans as a **native OIDC relying party** directly to **auth.romaine.life** (`oidc.config`, public client + PKCE via `enablePKCEAuthentication`, no client secret — same shape as Grafana). auth.romaine.life is the single source of truth for who gets in across every romaine.life app; it mirrors each user's platform `role` into a `groups` claim on the id_token, and ArgoCD RBAC maps `g, admin, role:admin`. The in-cluster **mcp-argocd** server authenticates to the ArgoCD API with an auth.romaine.life `role=service` JWT (minted via `/api/auth/exchange/k8s`, `sub=svc:mcp-argocd:mcp-argocd`), verified through the same `oidc.config` provider and mapped to `role:mcp-argocd` — so `scopes: '[groups, sub]'`. **Dex is fully retired** (`dex.enabled: false`); both humans and mcp-argocd go straight to auth.romaine.life. Grant/revoke admin by changing a user's role in auth.romaine.life — there is no email list in this repo. Admin fallback via local credentials.
 
 ## Related Repos
 
