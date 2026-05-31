@@ -62,15 +62,3 @@ removed {
 removed {
   from = github_actions_variable.loki_identity_client_id
 }
-
-# emma-birthday has been torn down. The workflow identity can remove the
-# Kubernetes app, Azure app registration, role assignments, and repo variables,
-# but it does not have GitHub repository admin/delete rights. Forget the
-# remaining repository state entry instead of retrying an impossible delete.
-removed {
-  from = module.app["emma-birthday"].github_repository.repo
-
-  lifecycle {
-    destroy = false
-  }
-}
