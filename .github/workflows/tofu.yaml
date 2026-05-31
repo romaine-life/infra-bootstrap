@@ -345,16 +345,10 @@ jobs:
             argocd.argoproj.io/secret-type=repository \
             --overwrite
 
-      # ── ArgoCD OIDC credentials ────────────────────────────────────
-      # Patch argocd-secret with OIDC creds from Key Vault. ArgoCD's
-      # $key syntax resolves from argocd-secret only.
-      - name: Sync ArgoCD OIDC credentials
-        if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'install'
-        run: |
-          CLIENT_ID=$(az keyvault secret show --vault-name romaine-kv --name argocd-oidc-client-id --query value -o tsv)
-          CLIENT_SECRET=$(az keyvault secret show --vault-name romaine-kv --name argocd-oidc-client-secret --query value -o tsv)
-          kubectl patch secret argocd-secret -n argocd --type merge \
-            -p "{\"stringData\":{\"oidc.clientId\":\"$CLIENT_ID\",\"oidc.clientSecret\":\"$CLIENT_SECRET\"}}"
+      # ArgoCD human SSO credentials are no longer seeded at bootstrap. SSO is
+      # native OIDC direct to auth.romaine.life as a public client with PKCE
+      # (k8s/argocd/values.yaml oidc.config) — there is no client secret to
+      # seed. The local `admin` account is the break-glass until ArgoCD is up.
 
       # ── Hand off to ArgoCD ───────────────────────────────────────
       # Apply all Application manifests — ArgoCD auto-syncs each one.

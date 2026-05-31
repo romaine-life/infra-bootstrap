@@ -61,52 +61,14 @@ resource "azurerm_key_vault_secret" "microsoft_oauth_client_secret" {
   key_vault_id = data.azurerm_key_vault.main.id
 }
 
-# ============================================================================
-# ArgoCD OIDC (server-side auth code flow)
-# ============================================================================
-# Dedicated app registration for ArgoCD SSO. Uses the authorization code
-# flow with a client secret — separate from the SPA social login app above.
-
-resource "azuread_application" "argocd" {
-  display_name     = "ArgoCD"
-  sign_in_audience = "AzureADandPersonalMicrosoftAccount"
-
-  # See comment on microsoft_login above — same ownership self-assertion.
-  owners = [data.azuread_client_config.current.object_id]
-
-  api {
-    requested_access_token_version = 2
-  }
-
-  web {
-    redirect_uris = [
-      "https://argocd.romaine.life/api/dex/callback",
-    ]
-  }
-
-  optional_claims {
-    id_token {
-      name = "email"
-    }
-  }
-}
-
-resource "azuread_application_password" "argocd" {
-  application_id = azuread_application.argocd.id
-  display_name   = "argocd-oidc"
-}
-
-resource "azurerm_key_vault_secret" "argocd_oidc_client_id" {
-  name         = "argocd-oidc-client-id"
-  value        = azuread_application.argocd.client_id
-  key_vault_id = data.azurerm_key_vault.main.id
-}
-
-resource "azurerm_key_vault_secret" "argocd_oidc_client_secret" {
-  name         = "argocd-oidc-client-secret"
-  value        = azuread_application_password.argocd.value
-  key_vault_id = data.azurerm_key_vault.main.id
-}
+# ArgoCD's dedicated "ArgoCD" Microsoft app registration + its OIDC client
+# secrets (argocd-oidc-client-id/secret, formerly here and in
+# platform-keyvaults.tf) were retired 2026-05-30. ArgoCD human SSO now goes
+# directly to auth.romaine.life as a native OIDC public client with PKCE — no
+# secret at all (see k8s/argocd/values.yaml oidc.config). The old Microsoft
+# app registration and its credentials have no remaining consumer. Deleting
+# the resource blocks destroys the app registration, its password, and both
+# KV-secret copies on the next apply.
 
 # ============================================================================
 # Google "Sign in with Google" (shared across all projects)

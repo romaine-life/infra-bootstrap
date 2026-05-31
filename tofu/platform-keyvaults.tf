@@ -50,14 +50,7 @@ resource "azurerm_key_vault_secret" "external_dns_azure_config_app" {
   })
 }
 
-resource "azurerm_key_vault_secret" "argocd_oidc_client_id_app" {
-  name         = "argocd-oidc-client-id"
-  value        = azuread_application.argocd.client_id
-  key_vault_id = azurerm_key_vault.platform["argocd"].id
-}
-
-resource "azurerm_key_vault_secret" "argocd_oidc_client_secret_app" {
-  name         = "argocd-oidc-client-secret"
-  value        = azuread_application_password.argocd.value
-  key_vault_id = azurerm_key_vault.platform["argocd"].id
-}
+# argocd_oidc_client_id_app / argocd_oidc_client_secret_app (the ng6-argocd
+# copies of the dedicated Microsoft app reg credentials) were retired
+# 2026-05-30 alongside the app registration in oauth.tf — ArgoCD SSO now
+# federates through auth.romaine.life.
