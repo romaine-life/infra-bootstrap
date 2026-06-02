@@ -1,7 +1,6 @@
-# Future OIDC trust for transferring this repo from nelsong6/infra-bootstrap
-# to romaine-life/infra-bootstrap. The existing nelsong6 trust was created
-# during bootstrap; these extra subjects let the workflow keep Azure access
-# immediately after the GitHub repository transfer.
+# OIDC trust for this repo after its transfer to romaine-life/infra-bootstrap.
+# The historical nelsong6 trust was created during bootstrap and remains until
+# every transfer-dependent path has been updated.
 
 resource "azuread_application_federated_identity_credential" "infra_bootstrap_romaine_life_main" {
   application_id = data.azuread_application.infra_ci.id
