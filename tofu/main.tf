@@ -145,7 +145,7 @@ locals {
     "void-drifter-infra",
   ])
 
-  org_apps      = toset(["diagrams", "kill-me", "llm-explorer", "my-homepage", "shows"])
+  org_apps      = toset(["diagrams", "fzt-frontend", "kill-me", "llm-explorer", "my-homepage", "shows"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -256,7 +256,7 @@ import {
 # split, fzt-picker pre-split). Import tells tofu they already exist.
 
 import {
-  to = module.app["fzt-frontend"].github_repository.repo
+  to = module.app_org["fzt-frontend"].github_repository.repo
   id = "fzt-frontend"
 }
 
@@ -344,6 +344,11 @@ moved {
 moved {
   from = module.app["llm-explorer"]
   to   = module.app_org["llm-explorer"]
+}
+
+moved {
+  from = module.app["fzt-frontend"]
+  to   = module.app_org["fzt-frontend"]
 }
 
 module "app" {

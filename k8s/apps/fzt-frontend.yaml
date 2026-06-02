@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/nelsong6/fzt-frontend.git
+    repoURL: https://github.com/romaine-life/fzt-frontend.git
     targetRevision: main
     path: k8s
   destination:
