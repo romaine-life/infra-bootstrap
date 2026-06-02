@@ -145,7 +145,7 @@ locals {
     "void-drifter-infra",
   ])
 
-  org_apps      = toset(["ambience", "diagrams", "fzt-frontend", "glimmung", "kill-me", "llm-explorer", "mcp-argocd", "mcp-auth", "my-homepage", "shows"])
+  org_apps      = toset(["ambience", "diagrams", "fzt-frontend", "glimmung", "kill-me", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-glimmung", "my-homepage", "shows"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -369,6 +369,11 @@ moved {
 moved {
   from = module.app["mcp-auth"]
   to   = module.app_org["mcp-auth"]
+}
+
+moved {
+  from = module.app["mcp-glimmung"]
+  to   = module.app_org["mcp-glimmung"]
 }
 
 module "app" {
