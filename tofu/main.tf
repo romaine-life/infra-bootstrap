@@ -145,7 +145,7 @@ locals {
     "void-drifter-infra",
   ])
 
-  org_apps      = toset(["ambience", "diagrams", "fzt-frontend", "kill-me", "llm-explorer", "my-homepage", "shows"])
+  org_apps      = toset(["ambience", "diagrams", "fzt-frontend", "glimmung", "kill-me", "llm-explorer", "my-homepage", "shows"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -354,6 +354,11 @@ moved {
 moved {
   from = module.app["ambience"]
   to   = module.app_org["ambience"]
+}
+
+moved {
+  from = module.app["glimmung"]
+  to   = module.app_org["glimmung"]
 }
 
 module "app" {
