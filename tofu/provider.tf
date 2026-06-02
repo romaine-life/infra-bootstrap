@@ -53,3 +53,9 @@ provider "github" {
   owner = var.github_owner
   token = var.github_pat
 }
+
+provider "github" {
+  alias = "romaine_life"
+  owner = "romaine-life"
+  token = var.github_pat
+}
