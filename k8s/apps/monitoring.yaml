@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/nelsong6/osms.git
+    repoURL: https://github.com/romaine-life/osms.git
     targetRevision: main
     path: k8s/kube-prometheus-stack
   destination:

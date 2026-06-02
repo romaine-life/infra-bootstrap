@@ -11,7 +11,7 @@ resource "azuread_application_federated_identity_credential" "osms_github_action
   display_name   = "osms-github-actions-main"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:nelsong6/osms:ref:refs/heads/main"
+  subject        = "repo:romaine-life/osms:ref:refs/heads/main"
 }
 
 resource "azuread_application_federated_identity_credential" "osms_github_actions_pr" {
@@ -19,5 +19,5 @@ resource "azuread_application_federated_identity_credential" "osms_github_action
   display_name   = "osms-github-actions-pr"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:nelsong6/osms:pull_request"
+  subject        = "repo:romaine-life/osms:pull_request"
 }
