@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/nelsong6/mcp-tank-operator.git
+    repoURL: https://github.com/romaine-life/mcp-tank-operator.git
     targetRevision: main
     path: chart
   destination:
