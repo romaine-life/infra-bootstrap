@@ -145,7 +145,7 @@ locals {
     "void-drifter-infra",
   ])
 
-  org_apps      = toset(["diagrams", "kill-me", "my-homepage", "shows"])
+  org_apps      = toset(["diagrams", "kill-me", "llm-explorer", "my-homepage", "shows"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -279,7 +279,7 @@ import {
 # sub-module (not ci_only) since it's an app with a frontend; currently
 # local-only but will be deployed as a SWA later.
 import {
-  to = module.app["llm-explorer"].github_repository.repo
+  to = module.app_org["llm-explorer"].github_repository.repo
   id = "llm-explorer"
 }
 
@@ -339,6 +339,11 @@ moved {
 moved {
   from = module.app["kill-me"]
   to   = module.app_org["kill-me"]
+}
+
+moved {
+  from = module.app["llm-explorer"]
+  to   = module.app_org["llm-explorer"]
 }
 
 module "app" {
