@@ -3,10 +3,10 @@ name: Infrastructure
 on:
   pull_request:
     branches: [main]
-    paths: ['tofu/**']
+    paths: ['tofu/**', '.github/workflows/tofu.yaml']
   push:
     branches: [main]
-    paths: ['tofu/**', 'k8s/**']
+    paths: ['tofu/**', 'k8s/**', '.github/workflows/tofu.yaml']
   workflow_dispatch:
 
 concurrency:
@@ -344,6 +344,12 @@ jobs:
         run: |
           kubectl apply -f k8s/apps/
           kubectl apply -f k8s/root-app.yaml
+
+      # ArgoCD cannot update the repoURL for the Application that points at
+      # k8s/apps until the bootstrap workflow reapplies root-app.yaml.
+      - name: Apply ArgoCD root app
+        if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'deployed'
+        run: kubectl apply -f k8s/root-app.yaml
 
       # ── Summary ──────────────────────────────────────────────────
       - name: Bootstrap summary
