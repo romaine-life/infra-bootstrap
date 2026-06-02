@@ -49,7 +49,7 @@ resource "azurerm_storage_container" "agent_screenshots_ambience" {
   container_access_type = "blob"
 }
 
-# ambience's CI SP (created by module.app["ambience"]) gets write access to
+# ambience's CI SP (created by module.app_org["ambience"]) gets write access to
 # its own container. Look up by display name rather than threading a
 # module output — keeps the agent-screenshots concern self-contained.
 data "azuread_service_principal" "ambience_ci" {
@@ -67,18 +67,24 @@ resource "azurerm_role_assignment" "ambience_screenshots_uploader" {
 # tofu output. State is still authoritative; this is just convenience
 # wiring (matches the existing app-config / KV-vault pattern).
 resource "github_actions_variable" "ambience_screenshot_storage_account" {
+  provider = github.romaine_life
+
   repository    = "ambience"
   variable_name = "AGENT_SCREENSHOT_STORAGE_ACCOUNT"
   value         = azurerm_storage_account.agent_screenshots.name
 }
 
 resource "github_actions_variable" "ambience_screenshot_container" {
+  provider = github.romaine_life
+
   repository    = "ambience"
   variable_name = "AGENT_SCREENSHOT_CONTAINER"
   value         = azurerm_storage_container.agent_screenshots_ambience.name
 }
 
 resource "github_actions_variable" "ambience_screenshot_container_url" {
+  provider = github.romaine_life
+
   repository    = "ambience"
   variable_name = "AGENT_SCREENSHOT_CONTAINER_URL"
   value         = "https://${azurerm_storage_account.agent_screenshots.name}.blob.core.windows.net/${azurerm_storage_container.agent_screenshots_ambience.name}"

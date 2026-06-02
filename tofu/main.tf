@@ -145,7 +145,7 @@ locals {
     "void-drifter-infra",
   ])
 
-  org_apps      = toset(["diagrams", "fzt-frontend", "kill-me", "llm-explorer", "my-homepage", "shows"])
+  org_apps      = toset(["ambience", "diagrams", "fzt-frontend", "kill-me", "llm-explorer", "my-homepage", "shows"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -247,7 +247,7 @@ import {
 # bring-up. Bringing into tofu so CI federated creds + AcrPush get managed
 # alongside the other k8s_apps.
 import {
-  to = module.app["ambience"].github_repository.repo
+  to = module.app_org["ambience"].github_repository.repo
   id = "ambience"
 }
 
@@ -349,6 +349,11 @@ moved {
 moved {
   from = module.app["fzt-frontend"]
   to   = module.app_org["fzt-frontend"]
+}
+
+moved {
+  from = module.app["ambience"]
+  to   = module.app_org["ambience"]
 }
 
 module "app" {

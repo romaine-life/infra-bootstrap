@@ -11,7 +11,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/nelsong6/ambience.git
+    repoURL: https://github.com/romaine-life/ambience.git
     targetRevision: main
     path: chart/ambience
     helm:
