@@ -33,5 +33,5 @@ resource "azurerm_role_assignment" "app_acr_push" {
   for_each             = local.k8s_apps
   scope                = azurerm_container_registry.main.id
   role_definition_name = "AcrPush"
-  principal_id         = module.app[each.key].service_principal_object_id
+  principal_id         = local.app_service_principal_object_ids[each.key]
 }

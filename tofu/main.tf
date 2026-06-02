@@ -111,6 +111,48 @@ resource "azurerm_role_assignment" "nelson_storage" {
 }
 
 locals {
+  app_names = toset([
+    "ambience",
+    "auth",
+    "bender-world",
+    "card-utility-stats",
+    "diagrams",
+    "eight-queens",
+    "fzt",
+    "fzt-automate",
+    "fzt-browser",
+    "fzt-desktop",
+    "fzt-frontend",
+    "fzt-picker",
+    "fzt-showcase",
+    "fzt-terminal",
+    "glimmung",
+    "house-hunt",
+    "kill-me",
+    "lights",
+    "llm-explorer",
+    "mcp-argocd",
+    "mcp-auth",
+    "mcp-azure-personal",
+    "mcp-github",
+    "mcp-glimmung",
+    "mcp-k8s",
+    "mcp-tank-operator",
+    "my-homepage",
+    "platform-mcp",
+    "shows",
+    "tank-operator",
+    "void-drifter-infra",
+  ])
+
+  org_apps      = toset(["my-homepage"])
+  personal_apps = setsubtract(local.app_names, local.org_apps)
+
+  app_service_principal_object_ids = merge(
+    { for name, app in module.app : name => app.service_principal_object_id },
+    { for name, app in module.app_org : name => app.service_principal_object_id },
+  )
+
   ci_only_apps = toset(["fzt", "fzt-terminal", "fzt-frontend", "fzt-automate", "fzt-browser", "fzt-picker", "fzt-desktop", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "platform-mcp"])
 
   # Apps deployed on AKS — gives the app SP AcrPush on romainecr (for CI to
@@ -279,6 +321,11 @@ moved {
   to   = module.app["mcp-azure-personal"]
 }
 
+moved {
+  from = module.app["my-homepage"]
+  to   = module.app_org["my-homepage"]
+}
+
 module "app" {
   source = "./app"
   # The cluster provider is configured against `var.cluster_subscription_id`
@@ -289,39 +336,37 @@ module "app" {
     azurerm         = azurerm
     azurerm.cluster = azurerm.cluster
   }
-  for_each = toset([
-    "ambience",
-    "auth",
-    "bender-world",
-    "card-utility-stats",
-    "diagrams",
-    "eight-queens",
-    "fzt",
-    "fzt-automate",
-    "fzt-browser",
-    "fzt-desktop",
-    "fzt-frontend",
-    "fzt-picker",
-    "fzt-showcase",
-    "fzt-terminal",
-    "glimmung",
-    "house-hunt",
-    "kill-me",
-    "lights",
-    "llm-explorer",
-    "mcp-argocd",
-    "mcp-auth",
-    "mcp-azure-personal",
-    "mcp-github",
-    "mcp-glimmung",
-    "mcp-k8s",
-    "mcp-tank-operator",
-    "my-homepage",
-    "platform-mcp",
-    "shows",
-    "tank-operator",
-    "void-drifter-infra",
-  ])
+  for_each = local.personal_apps
+
+  name                           = each.key
+  ci_only                        = contains(local.ci_only_apps, each.key)
+  tfstate_access                 = contains(local.runs_own_tofu_apps, each.key)
+  manages_subscription_resources = contains(local.runs_own_tofu_apps, each.key)
+  manages_role_assignments       = contains(local.runs_own_tofu_apps, each.key)
+  default_branch                 = lookup(local.app_default_branch, each.key, "main")
+  topics                         = lookup(local.app_topics, each.key, [])
+  pages_branch                   = lookup(local.app_pages_branch, each.key, "")
+  key_vault_name                 = data.azurerm_key_vault.main.name
+  key_vault_id                   = data.azurerm_key_vault.main.id
+  app_config_id                  = azurerm_app_configuration.main.id
+  cosmos_account_id              = azurerm_cosmosdb_account.serverless.id
+  cosmos_account_name            = azurerm_cosmosdb_account.serverless.name
+  cosmos_resource_group_name     = data.azurerm_resource_group.main.name
+  arm_tenant_id                  = data.azurerm_client_config.current.tenant_id
+  arm_subscription_id            = data.azurerm_client_config.current.subscription_id
+  cluster_subscription_id        = local.cluster_subscription_id
+  google_client_id               = data.azurerm_key_vault_secret.google_oauth_client_id.value
+  extra_graph_app_role_values    = setunion(local.default_graph_app_role_values, lookup(local.extra_graph_app_role_values, each.key, toset([])))
+}
+
+module "app_org" {
+  source = "./app"
+  providers = {
+    github          = github.romaine_life
+    azurerm         = azurerm
+    azurerm.cluster = azurerm.cluster
+  }
+  for_each = local.org_apps
 
   name                           = each.key
   ci_only                        = contains(local.ci_only_apps, each.key)
