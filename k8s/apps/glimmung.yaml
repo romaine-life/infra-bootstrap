@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/nelsong6/glimmung.git
+    repoURL: https://github.com/romaine-life/glimmung.git
     targetRevision: main
     path: k8s
   destination:
