@@ -17,6 +17,6 @@ import {
 # before this PR — see initial commit in nelsong6/mcp-auth. Tofu adopts
 # the existing repo on next apply.
 import {
-  to = module.app["mcp-auth"].github_repository.repo
+  to = module.app_org["mcp-auth"].github_repository.repo
   id = "mcp-auth"
 }
