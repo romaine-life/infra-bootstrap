@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/nelsong6/infra-bootstrap.git
+    repoURL: https://github.com/romaine-life/infra-bootstrap.git
     targetRevision: main
     path: k8s/envoy-gateway
     helm:
