@@ -308,22 +308,6 @@ jobs:
             --timeout 5m
           kubectl rollout status deploy/argocd-server -n argocd --timeout=5m
 
-      - name: Configure private repo access
-        if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'install'
-        run: |
-          GITHUB_PAT=$(az keyvault secret show --vault-name romaine-kv --name github-pat --query value -o tsv)
-          kubectl create secret generic infra-bootstrap-repo \
-            --namespace argocd \
-            --from-literal=type=git \
-            --from-literal=url=https://github.com/nelsong6/infra-bootstrap.git \
-            --from-literal=password="$GITHUB_PAT" \
-            --from-literal=username=nelsong6 \
-            --dry-run=client -o yaml | kubectl apply -f -
-          kubectl label secret infra-bootstrap-repo \
-            --namespace argocd \
-            argocd.argoproj.io/secret-type=repository \
-            --overwrite
-
       # ── Docker Hub credentials for ArgoCD ──────────────────────────
       # ArgoCD needs Docker Hub auth to pull OCI Helm charts (Docker
       # Hub returns 401 on tag resolution even for public images).
