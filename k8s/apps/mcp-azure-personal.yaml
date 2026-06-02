@@ -11,7 +11,7 @@ spec:
     # Repo was renamed from mcp-azure-admin → mcp-azure-personal; the
     # old URL still works via GitHub's automatic redirect but the
     # canonical name keeps ArgoCD's tracking and webhook routing clean.
-    repoURL: https://github.com/nelsong6/mcp-azure-personal.git
+    repoURL: https://github.com/romaine-life/mcp-azure-personal.git
     targetRevision: main
     path: chart
   destination:
