@@ -332,6 +332,7 @@ module "web" {
   # the repo's creation. Without this, on a brand-new app's first apply,
   # the variable POSTs race the repo create and 404.
   repo_name                   = github_repository.repo.name
+  repo_full_name              = github_repository.repo.full_name
   principal_id                = azuread_service_principal.app.object_id
   application_id              = azuread_application.app.id
   arm_subscription_id         = var.arm_subscription_id

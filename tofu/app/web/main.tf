@@ -24,6 +24,10 @@ variable "repo_name" {
   type = string
 }
 
+variable "repo_full_name" {
+  type = string
+}
+
 variable "principal_id" {
   type = string
 }
@@ -107,12 +111,12 @@ resource "azuread_application_federated_identity_credential" "github_actions_pro
   display_name   = "${var.repo_name}-github-actions-prod"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:nelsong6/${var.repo_name}:environment:prod"
+  subject        = "repo:${var.repo_full_name}:environment:prod"
 }
 
 # OIDC federated credential for dev environment. Workflows that set
 # `environment: dev` (typically workflow_dispatch on a feature branch)
-# get an OIDC token with `sub = repo:nelsong6/<repo>:environment:dev`,
+# get an OIDC token with `sub = repo:<owner>/<repo>:environment:dev`,
 # matched here. Branch-scope policy lives on the GitHub Environment's
 # allowed-branches list — wildcard there is fine because the env's name
 # is the trust boundary, not the FIC subject.
@@ -121,7 +125,7 @@ resource "azuread_application_federated_identity_credential" "github_actions_dev
   display_name   = "${var.repo_name}-github-actions-dev"
   audiences      = ["api://AzureADTokenExchange"]
   issuer         = "https://token.actions.githubusercontent.com"
-  subject        = "repo:nelsong6/${var.repo_name}:environment:dev"
+  subject        = "repo:${var.repo_full_name}:environment:dev"
 }
 
 # GitHub Actions variables
