@@ -9,7 +9,7 @@ import {
 }
 
 import {
-  to = module.app["mcp-tank-operator"].github_repository.repo
+  to = module.app_org["mcp-tank-operator"].github_repository.repo
   id = "mcp-tank-operator"
 }
 
