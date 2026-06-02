@@ -2,7 +2,7 @@
 # Landing Page CI/CD
 # ============================================================================
 # The landing page itself runs in AKS (namespace `landing-page`, ArgoCD app
-# at k8s/apps/landing-page.yaml, source manifests in nelsong6/landing-page).
+# at k8s/apps/landing-page.yaml, source manifests in romaine-life/landing-page).
 # This file owns the GitHub repo and the federated identity that lets that
 # repo's GitHub Actions push images to ACR via OIDC. The previous Static Web
 # App + apex A record + custom domain were retired when the splash moved to
@@ -11,6 +11,8 @@
 # ============================================================================
 
 resource "github_repository" "landing_page" {
+  provider = github.romaine_life
+
   name       = "landing-page"
   visibility = "public"
   auto_init  = true
@@ -44,18 +46,24 @@ resource "azuread_application_federated_identity_credential" "landing_page_githu
 }
 
 resource "github_actions_variable" "landing_page_arm_client_id" {
+  provider = github.romaine_life
+
   repository    = github_repository.landing_page.name
   variable_name = "ARM_CLIENT_ID"
   value         = data.azurerm_client_config.current.client_id
 }
 
 resource "github_actions_variable" "landing_page_arm_tenant_id" {
+  provider = github.romaine_life
+
   repository    = github_repository.landing_page.name
   variable_name = "ARM_TENANT_ID"
   value         = data.azurerm_client_config.current.tenant_id
 }
 
 resource "github_actions_variable" "landing_page_arm_subscription_id" {
+  provider = github.romaine_life
+
   repository    = github_repository.landing_page.name
   variable_name = "ARM_SUBSCRIPTION_ID"
   value         = data.azurerm_client_config.current.subscription_id
