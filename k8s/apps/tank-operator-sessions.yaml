@@ -19,7 +19,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/nelsong6/tank-operator.git
+    repoURL: https://github.com/romaine-life/tank-operator.git
     targetRevision: main
     path: k8s-sessions
   destination:
