@@ -20,3 +20,10 @@ import {
   to = module.app_org["mcp-auth"].github_repository.repo
   id = "mcp-auth"
 }
+
+# mcp-grafana: pre-created so the MCP scaffold could land before the
+# infra-bootstrap PR adopts the repo into the per-app module.
+import {
+  to = module.app_org["mcp-grafana"].github_repository.repo
+  id = "mcp-grafana"
+}
