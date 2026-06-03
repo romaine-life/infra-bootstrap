@@ -145,7 +145,7 @@ locals {
     "void-drifter-infra",
   ])
 
-  org_apps      = toset(["ambience", "auth", "bender-world", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "shows", "tank-operator", "void-drifter-infra"])
+  org_apps      = toset(["ambience", "auth", "bender-world", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "shows", "spirelens", "tank-operator", "void-drifter-infra"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -284,7 +284,7 @@ import {
 }
 
 import {
-  to = module.app["spirelens"].github_repository.repo
+  to = module.app_org["spirelens"].github_repository.repo
   id = "spirelens"
 }
 
@@ -296,6 +296,14 @@ import {
 moved {
   from = module.app["card-utility-stats"]
   to   = module.app["spirelens"]
+}
+
+# Phase 2: spirelens repo transferred nelsong6 -> romaine-life 2026-06-03;
+# move it onto the org provider. State id is already "spirelens" (phase 1),
+# so the org provider reads romaine-life/spirelens directly (no recreate).
+moved {
+  from = module.app["spirelens"]
+  to   = module.app_org["spirelens"]
 }
 
 # mcp-tank-operator import lives in imports.tf alongside other recently
