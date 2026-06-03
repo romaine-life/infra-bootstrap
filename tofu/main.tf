@@ -115,7 +115,7 @@ locals {
     "ambience",
     "auth",
     "bender-world",
-    "card-utility-stats",
+    "spirelens",
     "diagrams",
     "eight-queens",
     "fzt",
@@ -216,7 +216,7 @@ locals {
   # Add a repo here when its CI grows an `infra/` directory + `tofu`
   # workflow.
   runs_own_tofu_apps = toset([
-    "ambience", "auth", "bender-world", "card-utility-stats", "diagrams", "eight-queens",
+    "ambience", "auth", "bender-world", "spirelens", "diagrams", "eight-queens",
     "fzt-frontend", "fzt-showcase", "glimmung", "house-hunt", "kill-me", "lights",
     "llm-explorer", "mcp-azure-personal", "mcp-github", "my-homepage", "shows", "tank-operator", "void-drifter-infra",
   ])
@@ -284,8 +284,18 @@ import {
 }
 
 import {
-  to = module.app["card-utility-stats"].github_repository.repo
-  id = "card-utility-stats"
+  to = module.app["spirelens"].github_repository.repo
+  id = "spirelens"
+}
+
+# card-utility-stats was renamed to spirelens on github.com. Rename the
+# for_each key (still on the personal provider here) so tofu state matches the
+# repo's real name. The github provider treats github_repository.name changes
+# as in-place PATCH, so the numeric repo id + per-app SP client_id are
+# preserved. The org move happens in a follow-up PR once state id == spirelens.
+moved {
+  from = module.app["card-utility-stats"]
+  to   = module.app["spirelens"]
 }
 
 # mcp-tank-operator import lives in imports.tf alongside other recently
