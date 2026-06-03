@@ -1,15 +1,6 @@
-variable "github_owner" {
-  type = string
-}
-
-variable "github_pat" {
-  type      = string
-  sensitive = true
-}
-
 # Credentials for `infra-bootstrap-github-app` (app id 3942172), the GitHub App
-# installed on the romaine-life org. Used by the `github.romaine_life` provider
-# so org repo/secret/workflow management no longer depends on the personal PAT.
+# installed on the romaine-life org. Used by the (sole) `github` provider so
+# org repo/secret/workflow management no longer depends on the personal PAT.
 variable "github_app_id" {
   description = "App ID of infra-bootstrap-github-app (org-side github provider auth)."
   type        = string

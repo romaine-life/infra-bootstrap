@@ -49,19 +49,12 @@ provider "azuread" {
   use_oidc = true
 }
 
+# Single GitHub provider for the romaine-life org, authenticating as the
+# org-owned `infra-bootstrap-github-app` (app-auth). The personal nelsong6
+# provider + PAT are retired now that all repos live in the org.
 provider "github" {
-  owner = var.github_owner
-  token = var.github_pat
-}
-
-provider "github" {
-  alias = "romaine_life"
   owner = "romaine-life"
 
-  # Org-side writes authenticate as the dedicated `infra-bootstrap-github-app`
-  # (installed on the romaine-life org) instead of the personal PAT. The PAT
-  # remains on the default provider above only until the personal_apps are
-  # migrated/retired and TF_VAR_github_owner can flip.
   app_auth {
     id              = var.github_app_id
     installation_id = var.github_app_installation_id

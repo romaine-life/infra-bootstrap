@@ -528,7 +528,7 @@ module "app" {
 module "app_org" {
   source = "./app"
   providers = {
-    github          = github.romaine_life
+    github          = github
     azurerm         = azurerm
     azurerm.cluster = azurerm.cluster
   }
