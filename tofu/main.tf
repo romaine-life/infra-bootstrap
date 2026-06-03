@@ -145,7 +145,7 @@ locals {
     "void-drifter-infra",
   ])
 
-  org_apps      = toset(["ambience", "auth", "diagrams", "fzt-frontend", "glimmung", "kill-me", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "shows", "tank-operator", "void-drifter-infra"])
+  org_apps      = toset(["ambience", "auth", "bender-world", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "shows", "tank-operator", "void-drifter-infra"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -239,7 +239,7 @@ resource "azurerm_key_vault_secret" "card_utility_stats_vm_admin_password" {
 }
 
 import {
-  to = module.app["fzt"].github_repository.repo
+  to = module.app_org["fzt"].github_repository.repo
   id = "fzt"
 }
 
@@ -261,17 +261,17 @@ import {
 }
 
 import {
-  to = module.app["fzt-automate"].github_repository.repo
+  to = module.app_org["fzt-automate"].github_repository.repo
   id = "fzt-automate"
 }
 
 import {
-  to = module.app["fzt-browser"].github_repository.repo
+  to = module.app_org["fzt-browser"].github_repository.repo
   id = "fzt-browser"
 }
 
 import {
-  to = module.app["fzt-picker"].github_repository.repo
+  to = module.app_org["fzt-picker"].github_repository.repo
   id = "fzt-picker"
 }
 
@@ -409,6 +409,64 @@ moved {
 moved {
   from = module.app["tank-operator"]
   to   = module.app_org["tank-operator"]
+}
+
+# Batch migration of personal_apps to the org (repos transferred
+# nelsong6 -> romaine-life 2026-06-03). lights and card-utility-stats
+# (now spirelens) intentionally deferred and stay on the personal provider.
+moved {
+  from = module.app["bender-world"]
+  to   = module.app_org["bender-world"]
+}
+
+moved {
+  from = module.app["eight-queens"]
+  to   = module.app_org["eight-queens"]
+}
+
+moved {
+  from = module.app["fzt"]
+  to   = module.app_org["fzt"]
+}
+
+moved {
+  from = module.app["fzt-automate"]
+  to   = module.app_org["fzt-automate"]
+}
+
+moved {
+  from = module.app["fzt-browser"]
+  to   = module.app_org["fzt-browser"]
+}
+
+moved {
+  from = module.app["fzt-desktop"]
+  to   = module.app_org["fzt-desktop"]
+}
+
+moved {
+  from = module.app["fzt-picker"]
+  to   = module.app_org["fzt-picker"]
+}
+
+moved {
+  from = module.app["fzt-showcase"]
+  to   = module.app_org["fzt-showcase"]
+}
+
+moved {
+  from = module.app["fzt-terminal"]
+  to   = module.app_org["fzt-terminal"]
+}
+
+moved {
+  from = module.app["house-hunt"]
+  to   = module.app_org["house-hunt"]
+}
+
+moved {
+  from = module.app["platform-mcp"]
+  to   = module.app_org["platform-mcp"]
 }
 
 module "app" {
