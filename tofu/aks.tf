@@ -57,7 +57,7 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     # JetStream quorum-loss shape the 2026-05-25 incident showed.
     # max_count bumped from 3 to 4 on 2026-05-25 to absorb the
     # glimmung Postgres-migration rolling-deploy CPU pressure: the
-    # 2h foundation pod (nelsong6/glimmung#575) couldn't schedule
+    # 2h foundation pod (romaine-life/glimmung#575) couldn't schedule
     # because all 3 nodes were at CPU limit and the autoscaler was
     # already at max group size. 4 nodes gives the scheduler
     # headroom for the rollout surge plus the existing workload.

@@ -1,7 +1,7 @@
 # ============================================================================
 # `removed` blocks: drop app-specific identity resources from this state
 # ============================================================================
-# Companion to nelsong6/fzt-frontend#9 and nelsong6/llm-explorer#4, both
+# Companion to romaine-life/fzt-frontend#9 and romaine-life/llm-explorer#4, both
 # of which import the same Azure resources into their own per-repo tofu
 # state. With `lifecycle.destroy = false` the Azure resources stay in
 # place — only this state forgets they exist.
@@ -13,14 +13,14 @@
 #
 # Why this exists at all: app-specific resources don't belong in shared
 # infra-bootstrap state. The precipitating case was mcp-azure-personal —
-# see nelsong6/infra-bootstrap#127 and #128. fzt-frontend and llm-explorer
+# see romaine-life/infra-bootstrap#127 and #128. fzt-frontend and llm-explorer
 # were acknowledged anti-patterns at the time (the deleted files' headers
 # literally said "should move when those apps grow tofu pipelines"); now
 # they do.
 # ============================================================================
 
 # ----------------------------------------------------------------------------
-# fzt-frontend — moved to nelsong6/fzt-frontend/infra/
+# fzt-frontend — moved to romaine-life/fzt-frontend/infra/
 # ----------------------------------------------------------------------------
 
 removed {
@@ -62,7 +62,7 @@ removed {
 }
 
 # ----------------------------------------------------------------------------
-# llm-explorer — moved to nelsong6/llm-explorer/infra/
+# llm-explorer — moved to romaine-life/llm-explorer/infra/
 # ----------------------------------------------------------------------------
 
 removed {

@@ -326,7 +326,7 @@ moved {
 
 # mcp-azure-personal: repo was originally created via the for_each as
 # "mcp-azure-admin" on 2026-05-05, then renamed on github.com via
-# nelsong6/mcp-azure-personal#1 the same day. The for_each key never
+# romaine-life/mcp-azure-personal#1 the same day. The for_each key never
 # followed, so FIC subjects and the AAD application display_name
 # remained stale (the FIC subject mismatch is why workload identity
 # stopped working after the recent chart namespace rename surfaced the

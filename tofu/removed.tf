@@ -15,7 +15,7 @@ removed {
   from = azurerm_virtual_network_peering.romaine_life_card_utility_stats_dev_to_infra
 }
 
-# Ambience owns its user-auth app registration from nelsong6/ambience/tofu.
+# Ambience owns its user-auth app registration from romaine-life/ambience/tofu.
 # Forget the old shared-infra state entries without deleting the live Entra app
 # or its published Key Vault client-id secret.
 
@@ -31,7 +31,7 @@ removed {
   from = azurerm_key_vault_secret.ambience_oauth_client_id
 }
 
-# OSMS owns Loki storage and workload identity from nelsong6/osms/tofu.
+# OSMS owns Loki storage and workload identity from romaine-life/osms/tofu.
 # Forget the old shared-infra state entries without deleting the live storage
 # account, containers, identity, role assignment, or GitHub variable.
 
