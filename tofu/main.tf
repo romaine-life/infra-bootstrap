@@ -145,7 +145,7 @@ locals {
     "void-drifter-infra",
   ])
 
-  org_apps      = toset(["ambience", "auth", "bender-world", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "shows", "tank-operator", "void-drifter-infra"])
+  org_apps      = toset(["ambience", "auth", "bender-world", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "shows", "tank-operator", "void-drifter-infra"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -467,6 +467,11 @@ moved {
 moved {
   from = module.app["platform-mcp"]
   to   = module.app_org["platform-mcp"]
+}
+
+moved {
+  from = module.app["lights"]
+  to   = module.app_org["lights"]
 }
 
 module "app" {
