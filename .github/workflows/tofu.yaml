@@ -46,6 +46,11 @@ jobs:
           GITHUB_PAT=$(az keyvault secret show --vault-name romaine-kv --name github-pat --query value -o tsv)
           echo "::add-mask::$GITHUB_PAT"
           echo "github_pat=$GITHUB_PAT" >> $GITHUB_OUTPUT
+          # infra-bootstrap-github-app identifiers (non-secret) for the org-side provider.
+          GH_APP_ID=$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-id --query value -o tsv)
+          GH_APP_INSTALL_ID=$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-installation-id --query value -o tsv)
+          echo "github_app_id=$GH_APP_ID" >> $GITHUB_OUTPUT
+          echo "github_app_installation_id=$GH_APP_INSTALL_ID" >> $GITHUB_OUTPUT
 
       - name: Initialize OpenTofu
         working-directory: tofu
@@ -70,11 +75,15 @@ jobs:
           ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
           TF_VAR_github_pat: ${{ steps.secrets.outputs.github_pat }}
+          TF_VAR_github_app_id: ${{ steps.secrets.outputs.github_app_id }}
+          TF_VAR_github_app_installation_id: ${{ steps.secrets.outputs.github_app_installation_id }}
           TF_VAR_github_owner: nelsong6
           TF_VAR_cluster_subscription_id: ${{ vars.CLUSTER_ARM_SUBSCRIPTION_ID }}
           TF_VAR_cluster_resource_group_name: ${{ vars.CLUSTER_RESOURCE_GROUP_NAME || 'infra' }}
         run: |
           set -o pipefail
+          # PEM held only in this shell (never an output var / never logged).
+          export TF_VAR_github_app_pem="$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-private-key --query value -o tsv)"
           tofu plan -out=tfplan 2>&1 | tee plan_output.txt
 
           # Check plan for actual changes using tofu show
@@ -172,6 +181,11 @@ jobs:
           GITHUB_PAT=$(az keyvault secret show --vault-name romaine-kv --name github-pat --query value -o tsv)
           echo "::add-mask::$GITHUB_PAT"
           echo "github_pat=$GITHUB_PAT" >> $GITHUB_OUTPUT
+          # infra-bootstrap-github-app identifiers (non-secret) for the org-side provider.
+          GH_APP_ID=$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-id --query value -o tsv)
+          GH_APP_INSTALL_ID=$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-installation-id --query value -o tsv)
+          echo "github_app_id=$GH_APP_ID" >> $GITHUB_OUTPUT
+          echo "github_app_installation_id=$GH_APP_INSTALL_ID" >> $GITHUB_OUTPUT
 
       - name: Initialize OpenTofu
         working-directory: tofu
@@ -201,10 +215,14 @@ jobs:
           ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
           TF_VAR_github_pat: ${{ steps.secrets.outputs.github_pat }}
+          TF_VAR_github_app_id: ${{ steps.secrets.outputs.github_app_id }}
+          TF_VAR_github_app_installation_id: ${{ steps.secrets.outputs.github_app_installation_id }}
           TF_VAR_github_owner: nelsong6
           TF_VAR_cluster_subscription_id: ${{ vars.CLUSTER_ARM_SUBSCRIPTION_ID }}
           TF_VAR_cluster_resource_group_name: ${{ vars.CLUSTER_RESOURCE_GROUP_NAME || 'infra' }}
         run: |
+          # PEM held only in this shell (never an output var / never logged).
+          export TF_VAR_github_app_pem="$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-private-key --query value -o tsv)"
           tofu apply tfplan
           echo "### Apply successful" >> $GITHUB_STEP_SUMMARY
 
