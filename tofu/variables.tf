@@ -7,6 +7,25 @@ variable "github_pat" {
   sensitive = true
 }
 
+# Credentials for `infra-bootstrap-github-app` (app id 3942172), the GitHub App
+# installed on the romaine-life org. Used by the `github.romaine_life` provider
+# so org repo/secret/workflow management no longer depends on the personal PAT.
+variable "github_app_id" {
+  description = "App ID of infra-bootstrap-github-app (org-side github provider auth)."
+  type        = string
+}
+
+variable "github_app_installation_id" {
+  description = "Installation ID of infra-bootstrap-github-app on the romaine-life org."
+  type        = string
+}
+
+variable "github_app_pem" {
+  description = "PEM private key contents for infra-bootstrap-github-app."
+  type        = string
+  sensitive   = true
+}
+
 variable "cluster_subscription_id" {
   description = "Azure subscription ID for the AKS cluster and its VNet/subnet."
   type        = string
