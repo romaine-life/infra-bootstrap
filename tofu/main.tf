@@ -134,6 +134,7 @@ locals {
     "mcp-argocd",
     "mcp-auth",
     "mcp-azure-personal",
+    "mcp-grafana",
     "mcp-github",
     "mcp-glimmung",
     "mcp-k8s",
@@ -145,7 +146,7 @@ locals {
     "void-drifter-infra",
   ])
 
-  org_apps      = toset(["ambience", "auth", "bender-world", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "shows", "spirelens", "tank-operator", "void-drifter-infra"])
+  org_apps      = toset(["ambience", "auth", "bender-world", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "shows", "spirelens", "tank-operator", "void-drifter-infra"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -153,12 +154,12 @@ locals {
     { for name, app in module.app_org : name => app.service_principal_object_id },
   )
 
-  ci_only_apps = toset(["fzt", "fzt-terminal", "fzt-frontend", "fzt-automate", "fzt-browser", "fzt-picker", "fzt-desktop", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "platform-mcp"])
+  ci_only_apps = toset(["fzt", "fzt-terminal", "fzt-frontend", "fzt-automate", "fzt-browser", "fzt-picker", "fzt-desktop", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "platform-mcp"])
 
   # Apps deployed on AKS — gives the app SP AcrPush on romainecr (for CI to
   # push images). Expand as each app migrates off the shared api onto its
   # own K8s Deployment.
-  k8s_apps = toset(["ambience", "auth", "house-hunt", "kill-me", "fzt-frontend", "my-homepage", "diagrams", "llm-explorer", "shows", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "void-drifter-infra"])
+  k8s_apps = toset(["ambience", "auth", "house-hunt", "kill-me", "fzt-frontend", "my-homepage", "diagrams", "llm-explorer", "shows", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "void-drifter-infra"])
 
   # Subset of k8s_apps whose pods federate to infra-shared-identity via
   # `system:serviceaccount:<app>:infra-shared`. Empty: every app has
@@ -184,6 +185,7 @@ locals {
     "mcp-argocd"         = ["mcp-server", "tank-operator"]
     "mcp-auth"           = ["mcp-server", "tank-operator", "auth"]
     "mcp-azure-personal" = ["mcp-server", "tank-operator"]
+    "mcp-grafana"        = ["mcp-server", "tank-operator", "observability"]
     "mcp-github"         = ["mcp-server", "tank-operator"]
     "mcp-glimmung"       = ["mcp-server", "glimmung"]
     "mcp-k8s"            = ["mcp-server", "tank-operator"]
