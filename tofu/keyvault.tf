@@ -22,8 +22,3 @@ resource "azurerm_key_vault_secret" "external_dns_azure_config" {
     useWorkloadIdentityExtension = true
   })
 }
-
-data "azurerm_key_vault_secret" "github_pat" {
-  name         = "github-pat"
-  key_vault_id = data.azurerm_key_vault.main.id
-}

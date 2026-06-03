@@ -67,7 +67,7 @@ resource "azurerm_role_assignment" "ambience_screenshots_uploader" {
 # tofu output. State is still authoritative; this is just convenience
 # wiring (matches the existing app-config / KV-vault pattern).
 resource "github_actions_variable" "ambience_screenshot_storage_account" {
-  provider = github.romaine_life
+  provider = github
 
   repository    = "ambience"
   variable_name = "AGENT_SCREENSHOT_STORAGE_ACCOUNT"
@@ -75,7 +75,7 @@ resource "github_actions_variable" "ambience_screenshot_storage_account" {
 }
 
 resource "github_actions_variable" "ambience_screenshot_container" {
-  provider = github.romaine_life
+  provider = github
 
   repository    = "ambience"
   variable_name = "AGENT_SCREENSHOT_CONTAINER"
@@ -83,7 +83,7 @@ resource "github_actions_variable" "ambience_screenshot_container" {
 }
 
 resource "github_actions_variable" "ambience_screenshot_container_url" {
-  provider = github.romaine_life
+  provider = github
 
   repository    = "ambience"
   variable_name = "AGENT_SCREENSHOT_CONTAINER_URL"
