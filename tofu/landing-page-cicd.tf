@@ -11,7 +11,7 @@
 # ============================================================================
 
 resource "github_repository" "landing_page" {
-  provider = github.romaine_life
+  provider = github
 
   name       = "landing-page"
   visibility = "public"
@@ -46,7 +46,7 @@ resource "azuread_application_federated_identity_credential" "landing_page_githu
 }
 
 resource "github_actions_variable" "landing_page_arm_client_id" {
-  provider = github.romaine_life
+  provider = github
 
   repository    = github_repository.landing_page.name
   variable_name = "ARM_CLIENT_ID"
@@ -54,7 +54,7 @@ resource "github_actions_variable" "landing_page_arm_client_id" {
 }
 
 resource "github_actions_variable" "landing_page_arm_tenant_id" {
-  provider = github.romaine_life
+  provider = github
 
   repository    = github_repository.landing_page.name
   variable_name = "ARM_TENANT_ID"
@@ -62,7 +62,7 @@ resource "github_actions_variable" "landing_page_arm_tenant_id" {
 }
 
 resource "github_actions_variable" "landing_page_arm_subscription_id" {
-  provider = github.romaine_life
+  provider = github
 
   repository    = github_repository.landing_page.name
   variable_name = "ARM_SUBSCRIPTION_ID"
