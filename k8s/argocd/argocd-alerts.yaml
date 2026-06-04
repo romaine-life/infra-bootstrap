@@ -68,11 +68,14 @@ spec:
         - alert: ArgoCDAppOutOfSyncStuck
           # An Application has been OutOfSync for 30m. Auto-sync reconciles
           # within the 5m poll, so 30m OutOfSync means sync is genuinely stuck
-          # (the visible symptom of the webhook-drift outage). Excludes
-          # tank-operator-sessions, which is OutOfSync by design (it is a
-          # session generator whose live children are not git-managed).
+          # (the visible symptom of the webhook-drift outage). Scoped to
+          # autosync_enabled="true" — a label argocd_app_info carries — so apps
+          # that are OutOfSync by design (no automated sync, e.g. the
+          # tank-operator-sessions generator) never false-alarm, and any future
+          # manually-synced app is excluded automatically without a hardcoded
+          # name list.
           expr: |
-            argocd_app_info{sync_status="OutOfSync", name!="tank-operator-sessions"} == 1
+            argocd_app_info{sync_status="OutOfSync", autosync_enabled="true"} == 1
           for: 30m
           labels:
             severity: warning
