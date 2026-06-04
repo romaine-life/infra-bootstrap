@@ -1,5 +1,0 @@
-cloudnative-pg:
-  # PodMonitor for kube-prometheus-stack — the operator pod exposes
-  # /metrics on 8080 and the monitoring stack auto-discovers PodMonitors.
-  monitoring:
-    podMonitorEnabled: true
