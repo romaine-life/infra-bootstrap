@@ -83,15 +83,35 @@ configs:
 # Single replica — personal infra, no HA needed
 controller:
   replicas: 1
+  # Expose the application-controller metrics endpoint (:8082) and scrape it.
+  # These are the signals the reconcile-staleness alerts depend on
+  # (argocd_app_info sync/health, argocd_app_reconcile_count). Without this,
+  # ArgoCD ships ZERO metrics to Prometheus and the silent-auto-sync-stop
+  # outage of 2026-06-03 had nothing to alert on. The kube-prometheus-stack
+  # Prometheus discovers ServiceMonitors cluster-wide
+  # (serviceMonitorSelectorNilUsesHelmValues: false), so no extra labels are
+  # needed for it to pick these up from the argocd namespace.
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
 
 server:
   replicas: 1
   # Gateway handles TLS termination — disable ArgoCD's internal TLS
   extraArgs:
     - --insecure
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
 
 repoServer:
   replicas: 1
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
 
 redis:
   enabled: true

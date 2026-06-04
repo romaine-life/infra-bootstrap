@@ -13,3 +13,4 @@ resources:
   - argocd-route.yaml
   - argocd-secretstore.yaml
   - argocd-github-app-externalsecret.yaml
+  - argocd-alerts.yaml

@@ -1,0 +1,116 @@
+# ============================================================================
+# ArgoCD reconcile-staleness alerting
+# ============================================================================
+# Backstop for the silent-auto-sync-stop failure class. On 2026-06-03 a
+# GitHub App webhook-secret drift made every push webhook 400, so ArgoCD
+# stopped refreshing and auto-sync silently halted org-wide for ~7h with
+# nothing alerting. These rules fire when the controller stops reconciling,
+# loses its metrics entirely, or apps drift/degrade without recovering.
+#
+# Data source: the application-controller metrics endpoint (:8082), enabled
+# via controller.metrics in values.yaml. The kube-prometheus-stack Prometheus
+# discovers both the ServiceMonitor and this PrometheusRule cluster-wide
+# (serviceMonitor/ruleSelectorNilUsesHelmValues: false in the osms chart).
+#
+# NOTE on delivery: Alertmanager currently has no custom receiver wired, so
+# these become visible/firing in Prometheus + Alertmanager + Grafana but do
+# not yet page a channel. Routing them to a notification destination is named
+# remaining scope (requires a delivery target + secret), tracked separately.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: argocd-reconcile-staleness
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: argocd
+    role: alert-rules
+spec:
+  groups:
+    - name: argocd-reconcile-staleness
+      rules:
+        # --- Controller-level: the actual outage class -------------------
+        - alert: ArgoCDControllerNotReconciling
+          # The controller is up and emitting metrics, but has run zero app
+          # reconciles in 10m. With timeout.reconciliation=5m and ~30 apps,
+          # reconciles are continuous in healthy state; a flatline means the
+          # reconcile loop is wedged and auto-sync has silently stopped.
+          expr: |
+            sum(rate(argocd_app_reconcile_count[10m])) == 0
+          for: 15m
+          labels:
+            severity: critical
+            component: argocd
+          annotations:
+            summary: "ArgoCD application-controller has stopped reconciling"
+            description: >
+              No ArgoCD application reconciles in the last 10 minutes. Auto-sync
+              has silently stopped cluster-wide. Check argocd-application-controller
+              logs and the GitHub App webhook health (see k8s/argocd/README.md).
+
+        - alert: ArgoCDControllerNoMetrics
+          # No argocd_app_info at all → the controller is down or its metrics
+          # target is not being scraped. Complements the rule above, which
+          # only evaluates when the metric series exist.
+          expr: |
+            absent(argocd_app_info)
+          for: 10m
+          labels:
+            severity: critical
+            component: argocd
+          annotations:
+            summary: "ArgoCD is reporting no application metrics"
+            description: >
+              argocd_app_info has been absent for 10 minutes — the
+              application-controller is down or its ServiceMonitor target is
+              not being scraped. ArgoCD state visibility is lost.
+
+        # --- App-level: drift / health that isn't self-healing -----------
+        - alert: ArgoCDAppOutOfSyncStuck
+          # An Application has been OutOfSync for 30m. Auto-sync reconciles
+          # within the 5m poll, so 30m OutOfSync means sync is genuinely stuck
+          # (the visible symptom of the webhook-drift outage). Excludes
+          # tank-operator-sessions, which is OutOfSync by design (it is a
+          # session generator whose live children are not git-managed).
+          expr: |
+            argocd_app_info{sync_status="OutOfSync", name!="tank-operator-sessions"} == 1
+          for: 30m
+          labels:
+            severity: warning
+            component: argocd
+          annotations:
+            summary: "ArgoCD app {{ $labels.name }} stuck OutOfSync"
+            description: >
+              Application {{ $labels.name }} has been OutOfSync for 30 minutes.
+              Auto-sync should reconcile within the 5m poll; sustained drift
+              means sync is stuck (e.g. failed render or halted refresh).
+
+        - alert: ArgoCDAppDegraded
+          expr: |
+            argocd_app_info{health_status="Degraded"} == 1
+          for: 15m
+          labels:
+            severity: warning
+            component: argocd
+          annotations:
+            summary: "ArgoCD app {{ $labels.name }} is Degraded"
+            description: >
+              Application {{ $labels.name }} health has been Degraded for 15
+              minutes.
+
+        - alert: ArgoCDAppSyncStatusUnknown
+          # Unknown sync status = ArgoCD cannot compare desired vs live, e.g.
+          # the repo is unreachable or manifests fail to render (this is what
+          # the repo-server helm-dependency thrash produces when it blocks a
+          # comparison). A silent way for GitOps to stop tracking git.
+          expr: |
+            argocd_app_info{sync_status="Unknown"} == 1
+          for: 15m
+          labels:
+            severity: warning
+            component: argocd
+          annotations:
+            summary: "ArgoCD app {{ $labels.name }} sync status is Unknown"
+            description: >
+              Application {{ $labels.name }} has had Unknown sync status for 15
+              minutes — ArgoCD cannot compare against git (repo unreachable or
+              manifest render failure). Check argocd-repo-server logs.
