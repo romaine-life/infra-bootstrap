@@ -1,7 +1,23 @@
+# cloudnative-pg operator, vendored hermetically.
+#
+# This umbrella wrapper used to declare cloudnative-pg as a `dependencies:`
+# entry and let ArgoCD's repo-server fetch it at render time
+# (`helm dependency build`). That fetch is nondeterministic:
+# argocd-repo-server runs `helm dependency build` unconditionally on a cold
+# render and intermittently failed to populate charts/ ("found in Chart.yaml,
+# but missing in charts/ directory: cloudnative-pg"), so renders flapped.
+#
+# Fix: vendor the subchart as charts/cloudnative-pg-<version>.tgz and DROP the
+# `dependencies:` block. With no dependency declared, `helm dependency build`
+# is a no-op and `helm template` renders the vendored tgz from charts/ with no
+# network — fully deterministic, byte-reproducible renders.
+#
+# To bump the operator: replace the vendored tgz and update the note below —
+#   rm charts/cloudnative-pg-*.tgz
+#   helm pull cloudnative-pg --repo https://cloudnative-pg.io/charts \
+#     --version <new> -d charts/
+#
+# Vendored: cloudnative-pg 0.28.2 (https://cloudnative-pg.io/charts)
 apiVersion: v2
 name: cloudnative-pg-wrapper
 version: 0.1.0
-dependencies:
-  - name: cloudnative-pg
-    version: 0.28.2
-    repository: https://cloudnative-pg.io/charts

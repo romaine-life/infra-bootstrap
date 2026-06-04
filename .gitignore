@@ -39,7 +39,11 @@ terraform.rc
 # Ignore bootstrap credential config files
 bootstrap/*.config
 
-# Local helm dependency artifacts (we render charts locally for
-# verification; the actual chart pulls happen in ArgoCD).
+# Local helm dependency artifacts from `helm dependency build`. Most wrappers
+# let ArgoCD pull their subchart at render time, so their local build output
+# should not be committed. The exceptions are the deliberately VENDORED
+# subcharts below: their tgz is committed so argocd-repo-server renders them
+# hermetically (no render-time network — see the chart's Chart.yaml).
 **/charts/*.tgz
+!/k8s/cloudnative-pg/charts/*.tgz
 **/Chart.lock
