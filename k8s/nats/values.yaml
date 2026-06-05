@@ -56,20 +56,16 @@ nats:
       enabled: true
       fileStore:
         enabled: true
+        pvc:
+          enabled: true
+          size: 1Gi
+          storageClassName: managed-csi-premium
       memoryStore:
         enabled: true
         maxSize: 256Mi
     merge:
       authorization:
         token: << $NATS_TOKEN >>
-  jetstream:
-    enabled: true
-    fileStore:
-      enabled: true
-      pvc:
-        enabled: true
-        size: 1Gi
-        storageClassName: managed-csi-premium
   container:
     image:
       repository: nats
