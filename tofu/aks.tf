@@ -86,9 +86,12 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     }
   }
 
+  # Enabling calico requires reimaging existing system and user node pools,
+  # which will kill active sessions/pods. Treat as maintenance.
   network_profile {
     network_plugin      = "azure"
     network_plugin_mode = "overlay"
+    network_policy      = "calico"
     service_cidr        = "172.16.0.0/16"
     dns_service_ip      = "172.16.0.10"
   }
