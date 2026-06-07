@@ -1,19 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: chimera-board
+  name: chess-tactics
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
-    repoURL: https://github.com/romaine-life/chimera-board.git
+    repoURL: https://github.com/romaine-life/chess-tactics.git
     targetRevision: main
     path: k8s
   destination:
     server: https://kubernetes.default.svc
-    namespace: chimera-board
+    namespace: chess-tactics
   syncPolicy:
     automated:
       prune: true
