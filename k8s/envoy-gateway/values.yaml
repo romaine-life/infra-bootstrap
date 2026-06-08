@@ -10,3 +10,10 @@ gateway-helm:
       gatewayAPI:
         enabled:
           - XListenerSet
+      # Enable the Backend extension API so Gateway routes can target external
+      # FQDN destinations (e.g. api.github.com) via Backend resources. The
+      # locked-down implementation-agent egress path uses a TLSRoute (SNI
+      # passthrough) -> Backend to allow api.github.com by name, avoiding an
+      # IP/CIDR allowlist. Without this flag the controller ignores Backend.
+      extensionApis:
+        enableBackend: true
