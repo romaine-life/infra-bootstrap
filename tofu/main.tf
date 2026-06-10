@@ -160,7 +160,7 @@ locals {
   # Apps deployed on AKS — gives the app SP AcrPush on romainecr (for CI to
   # push images). Expand as each app migrates off the shared api onto its
   # own K8s Deployment.
-  k8s_apps = toset(["ambience", "auth", "chess-tactics", "house-hunt", "kill-me", "fzt-frontend", "my-homepage", "diagrams", "llm-explorer", "shows", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "void-drifter-infra"])
+  k8s_apps = toset(["ambience", "auth", "chess-tactics", "house-hunt", "kill-me", "fzt-frontend", "my-homepage", "diagrams", "llm-explorer", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "void-drifter-infra"])
 
   # Subset of k8s_apps whose pods federate to infra-shared-identity via
   # `system:serviceaccount:<app>:infra-shared`. Empty: every app has
@@ -222,7 +222,7 @@ locals {
   runs_own_tofu_apps = toset([
     "ambience", "auth", "bender-world", "spirelens", "diagrams", "eight-queens",
     "fzt-frontend", "fzt-showcase", "glimmung", "house-hunt", "kill-me", "lights",
-    "llm-explorer", "mcp-azure-personal", "mcp-github", "my-homepage", "shows", "tank-operator", "void-drifter-infra",
+    "llm-explorer", "mcp-azure-personal", "mcp-github", "my-homepage", "tank-operator", "void-drifter-infra",
   ])
 }
 
