@@ -97,6 +97,58 @@ resource "azurerm_kubernetes_cluster" "cluster" {
   }
 }
 
+resource "azapi_resource" "aks_auto_upgrade_maintenance" {
+  provider = azapi.cluster
+
+  type      = "Microsoft.ContainerService/managedClusters/maintenanceConfigurations@2025-10-01"
+  name      = "aksManagedAutoUpgradeSchedule"
+  parent_id = azurerm_kubernetes_cluster.cluster.id
+
+  schema_validation_enabled = false
+  body = {
+    properties = {
+      maintenanceWindow = {
+        startDate     = "2026-06-14"
+        startTime     = "06:00"
+        durationHours = 12
+        utcOffset     = "+00:00"
+        schedule = {
+          weekly = {
+            dayOfWeek     = "Sunday"
+            intervalWeeks = 1
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "azapi_resource" "aks_node_os_upgrade_maintenance" {
+  provider = azapi.cluster
+
+  type      = "Microsoft.ContainerService/managedClusters/maintenanceConfigurations@2025-10-01"
+  name      = "aksManagedNodeOSUpgradeSchedule"
+  parent_id = azurerm_kubernetes_cluster.cluster.id
+
+  schema_validation_enabled = false
+  body = {
+    properties = {
+      maintenanceWindow = {
+        startDate     = "2026-06-14"
+        startTime     = "06:00"
+        durationHours = 12
+        utcOffset     = "+00:00"
+        schedule = {
+          weekly = {
+            dayOfWeek     = "Sunday"
+            intervalWeeks = 1
+          }
+        }
+      }
+    }
+  }
+}
+
 moved {
   from = azurerm_kubernetes_cluster.cluster[0]
   to   = azurerm_kubernetes_cluster.cluster
