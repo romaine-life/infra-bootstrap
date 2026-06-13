@@ -142,12 +142,11 @@ locals {
     "mcp-tank-operator",
     "my-homepage",
     "platform-mcp",
-    "shows",
     "tank-operator",
     "void-drifter-infra",
   ])
 
-  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "shows", "spirelens", "tank-operator", "void-drifter-infra"])
+  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "spirelens", "tank-operator", "void-drifter-infra"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -359,11 +358,6 @@ moved {
 moved {
   from = module.app["diagrams"]
   to   = module.app_org["diagrams"]
-}
-
-moved {
-  from = module.app["shows"]
-  to   = module.app_org["shows"]
 }
 
 moved {

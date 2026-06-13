@@ -14,10 +14,16 @@ moved {
   to   = github_repository.retired["hermes"]
 }
 
+moved {
+  from = module.app_org["shows"].github_repository.repo
+  to   = github_repository.retired["shows"]
+}
+
 resource "github_repository" "retired" {
   for_each = toset([
     "emma-birthday",
     "hermes",
+    "shows",
   ])
 
   name       = each.key
