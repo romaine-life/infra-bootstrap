@@ -49,7 +49,7 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     os_disk_size_gb = 128
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes.id
 
-    # Autoscale 3-4 nodes. min_count was 2 until 2026-05-25 — bumped to 3
+    # Autoscale 3-5 nodes. min_count was 2 until 2026-05-25 — bumped to 3
     # so the NATS chart's required-hostname podAntiAffinity (R=3 stream,
     # one replica per node, see k8s/nats/values.yaml) can always be
     # satisfied. With min_count=2, an off-hours scale-down would strand
@@ -61,9 +61,12 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     # because all 3 nodes were at CPU limit and the autoscaler was
     # already at max group size. 4 nodes gives the scheduler
     # headroom for the rollout surge plus the existing workload.
+    # max_count bumped from 4 to 5 on 2026-06-13 after Tank/Glimmung
+    # validation slots plus a tank-operator rollout saturated all four nodes
+    # and left auth-fix smoke sessions Pending at max group size.
     auto_scaling_enabled = true
     min_count            = 3
-    max_count            = 4
+    max_count            = 5
 
     # AKS auto-populates upgrade_settings on the node pool; declare these
     # explicitly so tofu doesn't see drift and try to unset
