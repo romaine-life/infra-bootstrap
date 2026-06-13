@@ -65,7 +65,43 @@ nats:
         maxSize: 256Mi
     merge:
       authorization:
-        token: << $NATS_TOKEN >>
+        # === tank-operator#1128: per-session NATS credentials ===
+        #
+        # Stage 2 of the staged rollout in tank-operator
+        # docs/session-bus-auth.md. The single shared token became two
+        # NAMED static users + an auth_callout that issues per-session
+        # user JWTs:
+        #
+        #   - tank-operator        — the orchestrator (password = the same
+        #     tank-nats-token KV value as before; tank-operator chart sets
+        #     sessionBus.user in the same window).
+        #   - nats-auth-callout    — the credential issuer itself
+        #     (tank-nats-callout-password KV).
+        #
+        # Every OTHER connection — session pods — routes through
+        # $SYS.REQ.USER.AUTH to the nats-auth-callout deployment in the
+        # tank-operator namespace, which validates the pod's projected SA
+        # token (audience auth.romaine.life) and grants only that
+        # session's subjects. Pods still presenting the legacy shared
+        # token get pre-callout unrestricted permissions THROUGH the
+        # callout until they age out.
+        #
+        # issuer is the PUBLIC half of the account nkey whose seed lives
+        # in KV (tank-nats-callout-issuer-seed) and is mounted by the
+        # callout deployment; rotating it means new seed in KV + new
+        # public key here, one sync apart (callout outage during the gap
+        # only delays NEW session pod connects).
+        #
+        # ROLLBACK: revert this block to `token: << $NATS_TOKEN >>` and
+        # unset tank-operator's sessionBus.user — one sync each.
+        users:
+          - user: "tank-operator"
+            password: << $NATS_TOKEN >>
+          - user: "nats-auth-callout"
+            password: << $NATS_CALLOUT_PASSWORD >>
+        auth_callout:
+          issuer: "ADXGSOGMEXFX4DLDCTMV3JVHFPRVSAUK3GHEAS4XZJ2IMNONZMXATMQA"
+          auth_users: [ "tank-operator", "nats-auth-callout" ]
   container:
     image:
       repository: nats
@@ -76,6 +112,11 @@ nats:
           secretKeyRef:
             name: tank-nats-auth
             key: token
+      NATS_CALLOUT_PASSWORD:
+        valueFrom:
+          secretKeyRef:
+            name: tank-nats-callout
+            key: password
     # Burstable QoS: requests guarantee CPU/memory under contention so
     # the Linux scheduler does not deprioritize NATS the way it did on
     # 2026-05-25. CPU request sized at ~10x observed steady-state
