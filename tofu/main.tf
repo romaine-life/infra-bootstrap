@@ -219,7 +219,7 @@ locals {
   # Add a repo here when its CI grows an `infra/` directory + `tofu`
   # workflow.
   runs_own_tofu_apps = toset([
-    "ambience", "auth", "bender-world", "spirelens", "diagrams", "eight-queens",
+    "ambience", "auth", "bender-world", "chess-tactics", "spirelens", "diagrams", "eight-queens",
     "fzt-frontend", "fzt-showcase", "glimmung", "house-hunt", "kill-me", "lights",
     "llm-explorer", "mcp-azure-personal", "mcp-github", "my-homepage", "tank-operator", "void-drifter-infra",
   ])
