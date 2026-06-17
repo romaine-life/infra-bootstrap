@@ -37,6 +37,27 @@ resource "azurerm_kubernetes_cluster" "cluster" {
   automatic_upgrade_channel = "patch"
   node_os_upgrade_channel   = "NodeImage"
 
+  # Keep AKS-initiated patch and node-image upgrades inside a broad,
+  # explicit 12-hour window so session owners can see and plan around
+  # the disruption window in Tank's cluster-health page.
+  maintenance_window_auto_upgrade {
+    frequency   = "Weekly"
+    interval    = 1
+    day_of_week = "Sunday"
+    start_time  = "06:00"
+    utc_offset  = "+00:00"
+    duration    = 12
+  }
+
+  maintenance_window_node_os {
+    frequency   = "Weekly"
+    interval    = 1
+    day_of_week = "Sunday"
+    start_time  = "06:00"
+    utc_offset  = "+00:00"
+    duration    = 12
+  }
+
   # Cluster identity for managing Azure resources (load balancers, disks).
   # Separate from workload identity used by pods.
   identity {
