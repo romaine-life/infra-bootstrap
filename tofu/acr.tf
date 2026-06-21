@@ -74,3 +74,48 @@ resource "azurerm_container_registry_task" "purge_ci_aliases" {
     )
   }
 }
+
+# ----------------------------------------------------------------------------
+# Image-readiness webhook → tank-operator (event-driven provisioning signal).
+# ----------------------------------------------------------------------------
+# ACR fires a `push` delivery the instant a `sha-<commit>` image tag lands in
+# the registry. tank-operator's POST /webhooks/acr receiver records it as the
+# durable "the deployable image for this commit now exists" signal, which
+# replaces the test-slot provisioning gate's image-build *polling* wait (see
+# docs/event-driven-rollout.md in romaine-life/tank-operator). No more racing a
+# poller against registry propagation — the registry itself reports the instant
+# the artifact is queryable.
+#
+# Auth is a static bearer secret, and tofu owns BOTH ends of it: the same
+# generated value is stored in romaine-kv as `tank-operator-acr-webhook-secret`
+# (mirrored to the orchestrator as ACR_WEBHOOK_SECRET via ESO) AND sent as the
+# webhook's Authorization header — so the two never drift and there is no manual
+# seed. The receiver fails closed on an empty secret.
+resource "random_password" "tank_acr_webhook" {
+  length  = 48
+  special = false
+}
+
+resource "azurerm_key_vault_secret" "tank_acr_webhook" {
+  name         = "tank-operator-acr-webhook-secret"
+  value        = random_password.tank_acr_webhook.result
+  key_vault_id = data.azurerm_key_vault.main.id
+}
+
+resource "azurerm_container_registry_webhook" "tank_ci_image" {
+  name                = "tankciimage"
+  resource_group_name = data.azurerm_resource_group.main.name
+  registry_name       = azurerm_container_registry.main.name
+  location            = data.azurerm_resource_group.main.location
+  service_uri         = "https://tank.romaine.life/webhooks/acr"
+  actions             = ["push"]
+
+  # Registry-wide; the receiver filters to `sha-<commit>` tags and ignores
+  # `app-`/`claude-`/`api-proxy-`/etc. (Basic SKU caps webhooks at 2 — first one.)
+  scope  = ""
+  status = "enabled"
+
+  custom_headers = {
+    "Authorization" = "Bearer ${random_password.tank_acr_webhook.result}"
+  }
+}
