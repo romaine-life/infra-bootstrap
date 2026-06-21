@@ -37,21 +37,32 @@ resource "azurerm_role_assignment" "app_acr_push" {
 }
 
 # ----------------------------------------------------------------------------
-# Scheduled purge of ephemeral CI lookup aliases.
+# Scheduled purge to reclaim registry storage.
 # ----------------------------------------------------------------------------
-# docker-build-check publishes a commit-addressed `sha-<commit>` alias (and,
-# historically, run-scoped `ci-pr-`/`ci-ref-` tags) so Glimmung's deploy-image
-# resolver can look a test-slot image up by the verified commit SHA. These
-# aliases accrue ~1 per build and are NEVER referenced by Helm charts — charts
-# pin the content fingerprint `app-<sha256>`. The alias is just a second tag on
-# that same manifest, so deleting the alias tag leaves the fingerprint image
-# intact.
+# Basic SKU includes ~10 GiB; overage is billed per-GiB/day. Without active
+# reclamation the registry grew to ~655 GiB (~$58/mo overage). The root causes,
+# and what each step below addresses:
 #
-# The filters match ONLY `sha-<hex>` and `ci-(pr|ref)-` tags (anchored), never
-# `app-`/`claude-`/`codex-`/`api-proxy-` images. `--ago 30d` is far longer than
-# any ephemeral test-slot lease, so no live slot can reference a purged alias.
-resource "azurerm_container_registry_task" "purge_ci_aliases" {
-  name                  = "purge-ci-aliases"
+#   1. `*-build-cache` repos — regenerable BuildKit layer sets, by far the
+#      biggest sink (one cache repo alone held >1,600 manifests). Trimmed hard.
+#   2. Untagged ("dangling") manifests — left behind whenever a tag is moved or
+#      an alias is deleted. The previous task NEVER passed `--untagged`, so these
+#      accumulated forever. `acr purge --untagged` won't orphan manifests still
+#      referenced by a tagged multi-arch index, so it is safe registry-wide.
+#   3. Stale per-commit image history (`app-<sha256>`, bare-sha, `sha-<commit>`
+#      resolver aliases) — one+ per build, previously kept indefinitely.
+#
+# IMPORTANT — why this won't delete a live image: `--keep N` always retains the
+# N newest tags of each repo regardless of age, and a running deployment pins its
+# image by the newest tag it pushed. The only edge case is an app pinned to an
+# OLD image (a manual rollback) that also has >N newer untouched builds; keep N
+# generous (10) to make that effectively impossible for these low-churn repos.
+#
+# docker-build-check still publishes commit-addressed `sha-<commit>` / `ci-*`
+# aliases for Glimmung's deploy-image resolver; step 2's 30d window is far longer
+# than any ephemeral test-slot lease, so no live slot loses its alias.
+resource "azurerm_container_registry_task" "purge_stale_images" {
+  name                  = "purge-stale-images"
   container_registry_id = azurerm_container_registry.main.id
 
   platform {
@@ -67,7 +78,19 @@ resource "azurerm_container_registry_task" "purge_ci_aliases" {
     task_content = base64encode(<<-YAML
       version: v1.1.0
       steps:
-        - cmd: acr purge --filter '.*:^sha-[0-9a-f]+$' --filter '.*:^ci-(pr|ref)-.+' --ago 30d
+        # 1) BuildKit caches: keep a few recent manifests so builds still warm-
+        #    start, drop the rest. This is the largest single reclaim.
+        - cmd: acr purge --filter '.*-build-cache:.*' --ago 7d --keep 3 --untagged
+          disableWorkingDirectoryOverride: true
+          timeout: 3600
+        # 2) Ephemeral CI resolver aliases + the orphaned manifests they leave
+        #    behind (the --untagged that was missing before).
+        - cmd: acr purge --filter '.*:^sha-[0-9a-f]+$' --filter '.*:^ci-(pr|ref)-.+' --ago 30d --untagged
+          disableWorkingDirectoryOverride: true
+          timeout: 3600
+        # 3) Trim stale image history registry-wide, keeping the 10 newest builds
+        #    of every repo for rollback, and sweep any remaining dangling layers.
+        - cmd: acr purge --filter '.*:.*' --ago 30d --keep 10 --untagged
           disableWorkingDirectoryOverride: true
           timeout: 3600
     YAML
