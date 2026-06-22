@@ -45,7 +45,7 @@ resource "azurerm_kubernetes_cluster" "cluster" {
 
   default_node_pool {
     name            = "system"
-    vm_size         = "Standard_B2as_v2"
+    vm_size         = "Standard_B2s_v2"
     os_disk_size_gb = 32
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes.id
 
@@ -56,9 +56,11 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     # cluster recreation. Name must be unused and <= 12 chars.
     temporary_name_for_rotation = "systmp"
 
-    # Cost spin-down (2026-06-21): downsized to a single B2as_v2 (2 vCPU /
+    # Cost spin-down (2026-06-21): downsized to a single B2s_v2 (2 vCPU /
     # 8 GiB) after the heavy workloads (glimmung, tank-operator, ambience
-    # slots, nats, monitoring, loki, mcp-*) were suspended. The keep-set
+    # slots, nats, monitoring, loki, mcp-*) were suspended. Intel Bsv2, not
+    # AMD Basv2 (B2as_v2): this subscription has 0 vCPU quota for
+    # standardBasv2Family in westus2 but 20 for standardBsv2Family. The keep-set
     # (auth+auth-db, ambience, chess-tactics, static sites, platform) needs
     # ~3.1 GiB / ~1.7 vCPU of requests — comfortably inside one 8 GiB node;
     # 4 GiB (B2s) is ~800 MiB short on the fixed AKS+platform overhead. The
