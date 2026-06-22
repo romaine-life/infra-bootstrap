@@ -45,28 +45,29 @@ resource "azurerm_kubernetes_cluster" "cluster" {
 
   default_node_pool {
     name            = "system"
-    vm_size         = "Standard_E2bs_v5"
-    os_disk_size_gb = 128
+    vm_size         = "Standard_B2as_v2"
+    os_disk_size_gb = 32
     vnet_subnet_id  = azurerm_subnet.cluster_aks_nodes.id
 
-    # Autoscale 3-5 nodes. min_count was 2 until 2026-05-25 — bumped to 3
-    # so the NATS chart's required-hostname podAntiAffinity (R=3 stream,
-    # one replica per node, see k8s/nats/values.yaml) can always be
-    # satisfied. With min_count=2, an off-hours scale-down would strand
-    # one NATS replica Pending and immediately produce the same
-    # JetStream quorum-loss shape the 2026-05-25 incident showed.
-    # max_count bumped from 3 to 4 on 2026-05-25 to absorb the
-    # glimmung Postgres-migration rolling-deploy CPU pressure: the
-    # 2h foundation pod (romaine-life/glimmung#575) couldn't schedule
-    # because all 3 nodes were at CPU limit and the autoscaler was
-    # already at max group size. 4 nodes gives the scheduler
-    # headroom for the rollout surge plus the existing workload.
-    # max_count bumped from 4 to 5 on 2026-06-13 after Tank/Glimmung
-    # validation slots plus a tank-operator rollout saturated all four nodes
-    # and left auth-fix smoke sessions Pending at max group size.
+    # temporary_name_for_rotation lets the provider rotate this pool IN PLACE
+    # when a ForceNew field (vm_size, os_disk_size_gb) changes: it stands up a
+    # temp pool by this name, drains workloads onto it, recreates the system
+    # pool with the new spec, drains back, and deletes the temp pool — no
+    # cluster recreation. Name must be unused and <= 12 chars.
+    temporary_name_for_rotation = "systmp"
+
+    # Cost spin-down (2026-06-21): downsized to a single B2as_v2 (2 vCPU /
+    # 8 GiB) after the heavy workloads (glimmung, tank-operator, ambience
+    # slots, nats, monitoring, loki, mcp-*) were suspended. The keep-set
+    # (auth+auth-db, ambience, chess-tactics, static sites, platform) needs
+    # ~3.1 GiB / ~1.7 vCPU of requests — comfortably inside one 8 GiB node;
+    # 4 GiB (B2s) is ~800 MiB short on the fixed AKS+platform overhead. The
+    # prior 3-5x E2bs_v5 autoscale (sized for NATS quorum + glimmung/tank
+    # rollout surges) is gone; pinned at 1 node. Scale back up when the heavy
+    # apps return.
     auto_scaling_enabled = true
-    min_count            = 3
-    max_count            = 5
+    min_count            = 1
+    max_count            = 1
 
     # AKS auto-populates upgrade_settings on the node pool; declare these
     # explicitly so tofu doesn't see drift and try to unset
