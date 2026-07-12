@@ -38,11 +38,29 @@ resource "azurerm_role_assignment" "app_acr_push" {
 
 # Scheduled purge of stale images and BuildKit cache manifests.
 # ----------------------------------------------------------------------------
-# Delete BuildKit cache repositories entirely, then keep the three newest
-# tagged manifests per image repository and delete untagged leftovers. Do not
-# use an age gate here: high-churn repos can create hundreds of manifests
-# inside a week, so `--ago 7d`/`--ago 30d` still lets ACR storage balloon.
-# Deployed images are expected to be one of the newest tags for their app repo.
+# Three steps: empty the regenerable BuildKit cache repos, expire ephemeral
+# per-commit CI aliases, then an age-gated registry-wide trim sized so a
+# deployed pin is never collected.
+#
+# HISTORY — the previous policy (`--filter '.*:.*' --ago 0d --keep 3`) assumed
+# deployed images are always among the newest tags of their repo. That is
+# false: docker-build-check pushes `app-<fingerprint>` aliases from PR branches
+# without deploying, and Dependabot merges don't fire push-triggered deploy
+# workflows, so a live pin sinks down the tag list while never being rebuilt.
+# Every pinned image was deleted from the registry on 2026-06-29 (manual
+# keep-0 purge, with this task's keep-3 due to collect the pins soon after);
+# node-local image caches masked it until the 2026-07-11 AKS node-image
+# rollover forced fresh pulls and put every app on the cluster into
+# ImagePullBackOff.
+#
+# INVARIANT: a tag referenced by a k8s values pin (short git sha or
+# `app-<fingerprint>`) survives unless it is BOTH >30 days old AND has 10+
+# newer tags in its repo — a long-undeployed app keeps ~5 build generations
+# (each build pushes a sha + alias pair). If that residual window ever bites,
+# the fix is tag locking from the deploy workflows (`az acr repository update
+# --write-enabled false`), not a looser purge. Storage stays bounded because
+# the two churn sources (BuildKit caches, per-commit CI aliases) get their own
+# aggressive steps instead of squeezing the global keep-window.
 resource "azurerm_container_registry_task" "purge_stale_images" {
   name                  = "purge-stale-images"
   container_registry_id = azurerm_container_registry.main.id
@@ -60,10 +78,22 @@ resource "azurerm_container_registry_task" "purge_stale_images" {
     task_content = base64encode(<<-YAML
       version: v1.1.0
       steps:
+        # 1) BuildKit caches: regenerable, and by far the biggest sink (one
+        #    cache repo alone held >1,600 manifests). Nothing deploys from a
+        #    *-build-cache repo, so emptying weekly is safe; builds re-warm
+        #    the cache as they run.
         - cmd: acr purge --filter '.*-build-cache:.*' --ago 0d --keep 0 --untagged
           disableWorkingDirectoryOverride: true
           timeout: 3600
-        - cmd: acr purge --filter '.*:.*' --ago 0d --keep 3 --untagged
+        # 2) Ephemeral per-commit CI resolver aliases (tank-operator test
+        #    slots, Glimmung's deploy-image resolver). 14d far exceeds any
+        #    slot lease while keeping this churn out of step 3's 30d window.
+        - cmd: acr purge --filter '.*:^sha-[0-9a-f]+$' --filter '.*:^ci-(pr|ref)-.+' --ago 14d --untagged
+          disableWorkingDirectoryOverride: true
+          timeout: 3600
+        # 3) Registry-wide trim: never touch a tag <30d old; beyond that keep
+        #    the 10 newest per repo for rollback, and sweep dangling manifests.
+        - cmd: acr purge --filter '.*:.*' --ago 30d --keep 10 --untagged
           disableWorkingDirectoryOverride: true
           timeout: 3600
     YAML
