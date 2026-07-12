@@ -10,3 +10,7 @@ jobs:
       contents: write
     with:
       working_directory: 'tofu/provider'
+    secrets:
+      # Write deploy key: the template pushes the refreshed lockfile straight
+      # to main, which the branch ruleset only allows via its DeployKey bypass.
+      push_ssh_key: ${{ secrets.MAIN_PUSH_DEPLOY_KEY }}
