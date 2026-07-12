@@ -85,10 +85,16 @@ resource "azurerm_container_registry_task" "purge_stale_images" {
         - cmd: acr purge --filter '.*-build-cache:.*' --ago 0d --keep 0 --untagged
           disableWorkingDirectoryOverride: true
           timeout: 3600
-        # 2) Ephemeral per-commit CI resolver aliases (tank-operator test
-        #    slots, Glimmung's deploy-image resolver). 14d far exceeds any
-        #    slot lease while keeping this churn out of step 3's 30d window.
-        - cmd: acr purge --filter '.*:^sha-[0-9a-f]+$' --filter '.*:^ci-(pr|ref)-.+' --ago 14d --untagged
+        # 2) Ephemeral CI resolver aliases. `ci-pr-*`/`ci-ref-*` are scoped to
+        #    a single CI run (run_id+attempt) and read once by the Glimmung
+        #    deploy resolver at slot-provision time; `sha-<commit>` feeds the
+        #    tank-operator readiness webhook at push time and the same
+        #    resolver. Slot/runner leases hard-cap at 24h (glimmung
+        #    runnerLeaseMaxTTLSeconds), and this task only fires Sundays, so
+        #    `--ago 3d` yields a 3-10 day real lifetime — ≥3x the longest
+        #    lease. Canonical images are the `app-<fingerprint>` tags, which
+        #    step 3 governs.
+        - cmd: acr purge --filter '.*:^sha-[0-9a-f]+$' --filter '.*:^ci-(pr|ref)-.+' --ago 3d --untagged
           disableWorkingDirectoryOverride: true
           timeout: 3600
         # 3) Registry-wide trim: never touch a tag <30d old; beyond that keep
