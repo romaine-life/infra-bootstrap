@@ -266,6 +266,33 @@ resource "azuread_application_federated_identity_credential" "github_actions_pr"
   subject        = "repo:${github_repository.repo.full_name}:pull_request"
 }
 
+# GitHub mints repos created after its durable-ID OIDC rollout with subjects
+# embedding immutable numeric IDs (repo:OWNER@ownerid/REPO@repoid:...), and on
+# those repos no subject-claim customization template restores the classic
+# form (verified on crenellation, the org's first post-rollout repo — its CI
+# failed Azure login with AADSTS700213 three times, template pinned or not).
+# Pre-rollout repos still present classic subjects. Register both forms: FIC
+# matching is exact, so whichever form a repo doesn't present is inert.
+data "github_user" "repo_owner" {
+  username = split("/", github_repository.repo.full_name)[0]
+}
+
+resource "azuread_application_federated_identity_credential" "github_actions_main_durable" {
+  application_id = azuread_application.app.id
+  display_name   = "${var.name}-github-actions-${var.default_branch}-durable"
+  audiences      = ["api://AzureADTokenExchange"]
+  issuer         = "https://token.actions.githubusercontent.com"
+  subject        = "repo:${split("/", github_repository.repo.full_name)[0]}@${data.github_user.repo_owner.id}/${github_repository.repo.name}@${github_repository.repo.repo_id}:ref:refs/heads/${var.default_branch}"
+}
+
+resource "azuread_application_federated_identity_credential" "github_actions_pr_durable" {
+  application_id = azuread_application.app.id
+  display_name   = "${var.name}-github-actions-pr-durable"
+  audiences      = ["api://AzureADTokenExchange"]
+  issuer         = "https://token.actions.githubusercontent.com"
+  subject        = "repo:${split("/", github_repository.repo.full_name)[0]}@${data.github_user.repo_owner.id}/${github_repository.repo.name}@${github_repository.repo.repo_id}:pull_request"
+}
+
 resource "github_actions_variable" "key_vault_name" {
   repository    = github_repository.repo.name
   variable_name = "KEY_VAULT_NAME"
