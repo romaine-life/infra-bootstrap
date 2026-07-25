@@ -116,6 +116,7 @@ locals {
     "auth",
     "bender-world",
     "chess-tactics",
+    "crenellation",
     "spirelens",
     "diagrams",
     "eight-queens",
@@ -145,7 +146,7 @@ locals {
     "tank-operator",
   ])
 
-  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "spirelens", "tank-operator"])
+  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "crenellation", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "spirelens", "tank-operator"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -158,7 +159,7 @@ locals {
   # Apps deployed on AKS — gives the app SP AcrPush on romainecr (for CI to
   # push images). Expand as each app migrates off the shared api onto its
   # own K8s Deployment.
-  k8s_apps = toset(["ambience", "auth", "chess-tactics", "house-hunt", "kill-me", "fzt-frontend", "my-homepage", "diagrams", "llm-explorer", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator"])
+  k8s_apps = toset(["ambience", "auth", "chess-tactics", "crenellation", "house-hunt", "kill-me", "fzt-frontend", "my-homepage", "diagrams", "llm-explorer", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator"])
 
   # Subset of k8s_apps whose pods federate to infra-shared-identity via
   # `system:serviceaccount:<app>:infra-shared`. Empty: every app has
@@ -182,6 +183,7 @@ locals {
     "fzt-desktop"        = ["fzt-downstream"]
     "fzt-showcase"       = ["fzt-downstream"]
     "chess-tactics"      = ["game", "roguelike", "chess"]
+    "crenellation"       = ["game", "arcade", "rampart"]
     "mcp-argocd"         = ["mcp-server", "tank-operator"]
     "mcp-auth"           = ["mcp-server", "tank-operator", "auth"]
     "mcp-azure-personal" = ["mcp-server", "tank-operator"]
@@ -217,7 +219,7 @@ locals {
   # Add a repo here when its CI grows an `infra/` directory + `tofu`
   # workflow.
   runs_own_tofu_apps = toset([
-    "ambience", "auth", "bender-world", "chess-tactics", "spirelens", "diagrams", "eight-queens",
+    "ambience", "auth", "bender-world", "chess-tactics", "crenellation", "spirelens", "diagrams", "eight-queens",
     "fzt-frontend", "fzt-showcase", "glimmung", "house-hunt", "kill-me", "lights",
     "llm-explorer", "mcp-azure-personal", "mcp-github", "my-homepage", "tank-operator",
   ])
