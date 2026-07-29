@@ -10,6 +10,14 @@ resource "azurerm_dns_zone" "main" {
 
 }
 
+# Public DNS for the chess-tactics app's dedicated domain. The registrar
+# remains Namecheap; its nameserver delegation points at the Azure DNS
+# nameservers exposed by the chess_tactics_dns_name_servers output.
+resource "azurerm_dns_zone" "chess_tactics" {
+  name                = "chess-tactics.com"
+  resource_group_name = data.azurerm_resource_group.main.name
+}
+
 # ============================================================================
 # Shared DNS Configuration
 # ============================================================================
