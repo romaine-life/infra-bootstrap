@@ -38,6 +38,21 @@ output "dns_zone_id" {
   description = "Resource ID of the shared DNS zone"
 }
 
+output "chess_tactics_dns_zone_name" {
+  value       = azurerm_dns_zone.chess_tactics.name
+  description = "Name of the chess-tactics.com DNS zone"
+}
+
+output "chess_tactics_dns_zone_id" {
+  value       = azurerm_dns_zone.chess_tactics.id
+  description = "Resource ID of the chess-tactics.com DNS zone"
+}
+
+output "chess_tactics_dns_name_servers" {
+  value       = azurerm_dns_zone.chess_tactics.name_servers
+  description = "Azure DNS nameservers to configure at the chess-tactics.com registrar"
+}
+
 # ============================================================================
 # Cosmos DB Outputs
 # ============================================================================

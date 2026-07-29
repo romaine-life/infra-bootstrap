@@ -24,7 +24,7 @@ spec:
 # DNS-01 ClusterIssuer for wildcard certificates.
 # HTTP-01 cannot issue wildcards; DNS-01 against Azure DNS can.
 # Auth via workload identity on the shared managed identity (which
-# already has DNS Zone Contributor on the romaine.life zone). The
+# has DNS Zone Contributor on each managed Azure DNS zone). The
 # federated credential mapping infra-shared-identity to
 # cert-manager's SA lives in tofu/aks.tf.
 apiVersion: cert-manager.io/v1
@@ -46,3 +46,17 @@ spec:
             environment: AzurePublicCloud
             managedIdentity:
               clientID: 44b0ff37-b886-4101-ab19-23388ead9c0b
+        selector:
+          dnsZones:
+            - romaine.life
+      - dns01:
+          azureDNS:
+            resourceGroupName: infra
+            subscriptionID: aee0cbd2-8074-4001-b610-0f8edb4eaa3c
+            hostedZoneName: chess-tactics.com
+            environment: AzurePublicCloud
+            managedIdentity:
+              clientID: 44b0ff37-b886-4101-ab19-23388ead9c0b
+        selector:
+          dnsZones:
+            - chess-tactics.com

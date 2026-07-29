@@ -183,6 +183,14 @@ resource "azurerm_role_assignment" "shared_identity_dns" {
   principal_id         = azurerm_user_assigned_identity.shared.principal_id
 }
 
+# Allow ExternalDNS (and cert-manager through the same workload identity) to
+# manage records in the chess-tactics.com zone.
+resource "azurerm_role_assignment" "shared_identity_chess_tactics_dns" {
+  scope                = azurerm_dns_zone.chess_tactics.id
+  role_definition_name = "DNS Zone Contributor"
+  principal_id         = azurerm_user_assigned_identity.shared.principal_id
+}
+
 # cert-manager — issues certificates via DNS-01 against Azure DNS. Reuses the
 # shared identity (already has DNS Zone Contributor); federation ties it to
 # the cert-manager controller's ServiceAccount so wildcard certs (e.g.

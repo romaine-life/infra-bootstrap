@@ -27,6 +27,7 @@ external-dns:
     azure.workload.identity/use: "true"
   domainFilters:
     - romaine.life
+    - chess-tactics.com
   extraVolumes:
     - name: azure-config
       secret:
