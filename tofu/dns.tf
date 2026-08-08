@@ -89,6 +89,34 @@ resource "azurerm_dns_txt_record" "apex" {
 
 }
 
+# ============================================================================
+# chess-tactics.com TXT records
+# ============================================================================
+
+# Search Console Domain property for chess-tactics.com — added 2026-08-08 to
+# request review of the Safe Browsing "Dangerous site" flag Chrome's classifier
+# put on the apex ten days after the domain was registered. This is the same
+# failure the apex records above were added for: a brand-new host, discovered
+# through the Certificate Transparency log its first Let's Encrypt cert wrote
+# to, classified on a lag and flagged before it had any reputation.
+#
+# The romaine.life Domain property does not cover this zone — chess-tactics.com
+# is a separate registrable domain, so it needs verification of its own.
+#
+# Safe to own here: external-dns holds no ownership TXT on this apex, and
+# cert-manager's DNS01 solver writes only _acme-challenge, a different name.
+resource "azurerm_dns_txt_record" "chess_tactics_apex" {
+  name                = "@" # Root domain
+  zone_name           = azurerm_dns_zone.chess_tactics.name
+  resource_group_name = data.azurerm_resource_group.main.name
+  ttl                 = 3600
+
+  record {
+    value = "google-site-verification=uZVhmpZMh8x8TFAXKlwBdlqR6jO6w2EhdIHBYHWsrgU"
+  }
+
+}
+
 # DMARC Record - Email authentication policy
 resource "azurerm_dns_txt_record" "dmarc" {
   name                = "_dmarc"
