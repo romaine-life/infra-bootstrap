@@ -37,6 +37,23 @@ resource "azurerm_cosmosdb_account" "serverless" {
     location          = data.azurerm_resource_group.main.location
     failover_priority = 0
   }
+
+  # Point-in-time restore instead of the Periodic default (240-minute
+  # interval / 8-hour retention / Geo redundancy), which kept at most two
+  # backups alive and made restore an Azure support ticket rather than a
+  # self-service operation.
+  #
+  # ONE-WAY: Azure does not support migrating an account back from
+  # Continuous to Periodic. Don't try to revert this block — the provider
+  # and ARM will both reject it, and the account would have to be rebuilt.
+  # `Continuous7Days` costs nothing to store — only the 30/35-day tiers are
+  # billed for backup storage ($0.20/GB/region/month). Restores are billed
+  # on every tier. Switching *between* continuous tiers is allowed, so
+  # `Continuous30Days` stays available if 7 days ever proves too short.
+  backup {
+    type = "Continuous"
+    tier = "Continuous7Days"
+  }
 }
 
 # Cosmos data plane role on the shared identity used to be assigned here
