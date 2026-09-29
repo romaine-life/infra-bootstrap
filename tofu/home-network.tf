@@ -65,3 +65,41 @@ resource "azurerm_role_assignment" "nas_acme_dns" {
 output "nas_acme_client_id" {
   value = azuread_application.nas_acme.client_id
 }
+
+# ============================================================================
+# Public Jellyfin (jellyfin.romaine.life)
+# ============================================================================
+# Jellyfin on the home NAS, reachable by friends. The A record tracks the
+# home WAN IP: the NAS rewrites it (dynamic DNS) with the nas-acme identity,
+# whose write access here is scoped to this single record set. tofu only
+# creates it, so the live IP is ignored.
+#
+# Its cert is issued alongside *.home.romaine.life via the same delegated
+# challenge zone, so no inbound port 80 is needed.
+# ============================================================================
+
+resource "azurerm_dns_a_record" "jellyfin" {
+  name                = "jellyfin"
+  zone_name           = azurerm_dns_zone.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
+  ttl                 = 300
+  records             = ["24.20.230.44"]
+
+  lifecycle {
+    ignore_changes = [records]
+  }
+}
+
+resource "azurerm_role_assignment" "nas_acme_jellyfin_ddns" {
+  scope                = azurerm_dns_a_record.jellyfin.id
+  role_definition_name = "DNS Zone Contributor"
+  principal_id         = azuread_service_principal.nas_acme.object_id
+}
+
+resource "azurerm_dns_cname_record" "jellyfin_acme_challenge" {
+  name                = "_acme-challenge.jellyfin"
+  zone_name           = azurerm_dns_zone.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
+  ttl                 = 300
+  record              = "jellyfin.${azurerm_dns_zone.home_acme.name}"
+}
