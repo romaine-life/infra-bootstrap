@@ -62,6 +62,7 @@ ArgoCD authenticates humans as a **native OIDC relying party** directly to **aut
 - **infra-bootstrap** (this repo) — root infrastructure + cluster platform
 - **my-homepage**, **kill-me**, **plant-agent**, **investing**, **house-hunt**, **fzt-frontend**, **diagrams**, **llm-explorer**, **ambience**, **tank-operator**, **glimmung**, **chess-tactics**, **crenellation** — apps on AKS (each namespace + Deployment + HTTPRoute)
 - **bender-world**, **eight-queens**, **lights**, **fzt-showcase**, **landing-page** — frontend-only SWAs (intentional, kept as SWAs)
+- **macrocraft** — Godot RTS about programmable unit behavior; desktop game, repo + CI identity only (`ci_only`, no hosting)
 - **pipeline-templates** — reusable GitHub Actions workflows
 
 ## Historical Notes

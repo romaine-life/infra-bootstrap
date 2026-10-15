@@ -133,6 +133,7 @@ locals {
     "kill-me",
     "lights",
     "llm-explorer",
+    "macrocraft",
     "mcp-argocd",
     "mcp-auth",
     "mcp-azure-personal",
@@ -146,7 +147,7 @@ locals {
     "tank-operator",
   ])
 
-  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "crenellation", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "spirelens", "tank-operator"])
+  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "crenellation", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "spirelens", "tank-operator"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -154,7 +155,7 @@ locals {
     { for name, app in module.app_org : name => app.service_principal_object_id },
   )
 
-  ci_only_apps = toset(["fzt", "fzt-terminal", "fzt-frontend", "fzt-automate", "fzt-browser", "fzt-picker", "fzt-desktop", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "platform-mcp"])
+  ci_only_apps = toset(["fzt", "fzt-terminal", "fzt-frontend", "fzt-automate", "fzt-browser", "fzt-picker", "fzt-desktop", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "platform-mcp"])
 
   # Apps deployed on AKS — gives the app SP AcrPush on romainecr (for CI to
   # push images). Expand as each app migrates off the shared api onto its
@@ -184,6 +185,7 @@ locals {
     "fzt-showcase"       = ["fzt-downstream"]
     "chess-tactics"      = ["game", "roguelike", "chess"]
     "crenellation"       = ["game", "arcade", "rampart"]
+    "macrocraft"         = ["game", "rts", "godot"]
     "mcp-argocd"         = ["mcp-server", "tank-operator"]
     "mcp-auth"           = ["mcp-server", "tank-operator", "auth"]
     "mcp-azure-personal" = ["mcp-server", "tank-operator"]
