@@ -93,6 +93,12 @@ variable "topics" {
   default     = []
 }
 
+variable "allow_auto_merge" {
+  description = "Allow PRs to be set to merge automatically once checks pass."
+  type        = bool
+  default     = false
+}
+
 variable "pages_branch" {
   description = "Branch to serve GitHub Pages from. Empty string disables Pages."
   type        = string
@@ -149,6 +155,7 @@ resource "github_repository" "repo" {
   allow_squash_merge     = true
   allow_rebase_merge     = false
   delete_branch_on_merge = true
+  allow_auto_merge       = var.allow_auto_merge
 
   dynamic "pages" {
     for_each = var.pages_branch != "" ? [1] : []

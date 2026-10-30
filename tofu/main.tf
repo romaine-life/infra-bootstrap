@@ -180,7 +180,8 @@ locals {
   app_default_branch = {
     "fzt" = "main"
   }
-  private_apps = toset(["lights"])
+  private_apps    = toset(["lights"])
+  auto_merge_apps = toset(["ambience"])
   app_topics = {
     "fzt-desktop"        = ["fzt-downstream"]
     "fzt-showcase"       = ["fzt-downstream"]
@@ -517,6 +518,7 @@ module "app" {
   visibility                     = contains(local.private_apps, each.key) ? "private" : "public"
   topics                         = lookup(local.app_topics, each.key, [])
   pages_branch                   = lookup(local.app_pages_branch, each.key, "")
+  allow_auto_merge               = contains(local.auto_merge_apps, each.key)
   key_vault_name                 = data.azurerm_key_vault.main.name
   key_vault_id                   = data.azurerm_key_vault.main.id
   app_config_id                  = azurerm_app_configuration.main.id
@@ -548,6 +550,7 @@ module "app_org" {
   visibility                     = contains(local.private_apps, each.key) ? "private" : "public"
   topics                         = lookup(local.app_topics, each.key, [])
   pages_branch                   = lookup(local.app_pages_branch, each.key, "")
+  allow_auto_merge               = contains(local.auto_merge_apps, each.key)
   key_vault_name                 = data.azurerm_key_vault.main.name
   key_vault_id                   = data.azurerm_key_vault.main.id
   app_config_id                  = azurerm_app_configuration.main.id
