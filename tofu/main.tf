@@ -180,6 +180,7 @@ locals {
   app_default_branch = {
     "fzt" = "main"
   }
+  private_apps = toset(["lights"])
   app_topics = {
     "fzt-desktop"        = ["fzt-downstream"]
     "fzt-showcase"       = ["fzt-downstream"]
@@ -513,6 +514,7 @@ module "app" {
   manages_subscription_resources = contains(local.runs_own_tofu_apps, each.key)
   manages_role_assignments       = contains(local.runs_own_tofu_apps, each.key)
   default_branch                 = lookup(local.app_default_branch, each.key, "main")
+  visibility                     = contains(local.private_apps, each.key) ? "private" : "public"
   topics                         = lookup(local.app_topics, each.key, [])
   pages_branch                   = lookup(local.app_pages_branch, each.key, "")
   key_vault_name                 = data.azurerm_key_vault.main.name
@@ -543,6 +545,7 @@ module "app_org" {
   manages_subscription_resources = contains(local.runs_own_tofu_apps, each.key)
   manages_role_assignments       = contains(local.runs_own_tofu_apps, each.key)
   default_branch                 = lookup(local.app_default_branch, each.key, "main")
+  visibility                     = contains(local.private_apps, each.key) ? "private" : "public"
   topics                         = lookup(local.app_topics, each.key, [])
   pages_branch                   = lookup(local.app_pages_branch, each.key, "")
   key_vault_name                 = data.azurerm_key_vault.main.name

@@ -103,3 +103,38 @@ resource "azurerm_dns_cname_record" "jellyfin_acme_challenge" {
   ttl                 = 300
   record              = "jellyfin.${azurerm_dns_zone.home_acme.name}"
 }
+
+# ============================================================================
+# Public OpenProject (openproject.romaine.life)
+# ============================================================================
+# OpenProject on the home NAS, reachable by its users away from home behind
+# the auth.romaine.life gate (nelsong6/openproject). Same shape as Jellyfin:
+# the NAS keeps the A record on the home WAN IP with the nas-acme identity,
+# scoped to this record set, and issues its cert through the challenge zone.
+# ============================================================================
+
+resource "azurerm_dns_a_record" "openproject" {
+  name                = "openproject"
+  zone_name           = azurerm_dns_zone.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
+  ttl                 = 300
+  records             = ["24.20.230.44"]
+
+  lifecycle {
+    ignore_changes = [records]
+  }
+}
+
+resource "azurerm_role_assignment" "nas_acme_openproject_ddns" {
+  scope                = azurerm_dns_a_record.openproject.id
+  role_definition_name = "DNS Zone Contributor"
+  principal_id         = azuread_service_principal.nas_acme.object_id
+}
+
+resource "azurerm_dns_cname_record" "openproject_acme_challenge" {
+  name                = "_acme-challenge.openproject"
+  zone_name           = azurerm_dns_zone.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
+  ttl                 = 300
+  record              = "openproject.${azurerm_dns_zone.home_acme.name}"
+}
