@@ -41,62 +41,13 @@ resource "azurerm_storage_account" "agent_screenshots" {
   }
 }
 
-# Per-app container. New apps register by adding a container + role
-# assignment for their CI SP here.
-resource "azurerm_storage_container" "agent_screenshots_ambience" {
-  name                  = "ambience"
-  storage_account_id    = azurerm_storage_account.agent_screenshots.id
-  container_access_type = "blob"
-}
-
-# ambience's CI SP (created by module.app_org["ambience"]) gets write access to
-# its own container. Look up by display name rather than threading a
-# module output — keeps the agent-screenshots concern self-contained.
-data "azuread_service_principal" "ambience_ci" {
-  display_name = "ambience"
-}
-
-resource "azurerm_role_assignment" "ambience_screenshots_uploader" {
-  scope                = azurerm_storage_container.agent_screenshots_ambience.resource_manager_id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = data.azuread_service_principal.ambience_ci.object_id
-}
-
-# Push the storage details to the ambience repo as Actions variables so
-# the default workflow can consume them without round-tripping through
-# tofu output. State is still authoritative; this is just convenience
-# wiring (matches the existing app-config / KV-vault pattern).
-resource "github_actions_variable" "ambience_screenshot_storage_account" {
-  provider = github
-
-  repository    = "ambience"
-  variable_name = "AGENT_SCREENSHOT_STORAGE_ACCOUNT"
-  value         = azurerm_storage_account.agent_screenshots.name
-}
-
-resource "github_actions_variable" "ambience_screenshot_container" {
-  provider = github
-
-  repository    = "ambience"
-  variable_name = "AGENT_SCREENSHOT_CONTAINER"
-  value         = azurerm_storage_container.agent_screenshots_ambience.name
-}
-
-resource "github_actions_variable" "ambience_screenshot_container_url" {
-  provider = github
-
-  repository    = "ambience"
-  variable_name = "AGENT_SCREENSHOT_CONTAINER_URL"
-  value         = "https://${azurerm_storage_account.agent_screenshots.name}.blob.core.windows.net/${azurerm_storage_container.agent_screenshots_ambience.name}"
-}
-
 # ---------------------------------------------------------------------------
 # Per-app container: glimmung
 # ---------------------------------------------------------------------------
-# Same pattern as ambience — separate container, separate role assignment
-# for glimmung's CI SP, separate Actions vars on the glimmung repo. Lets
-# us reap glimmung's screenshots independently and keeps the per-app blast
-# radius narrow.
+# Per-app container: new apps register by adding a container + role
+# assignment for their CI SP here. A separate container per app lets us
+# reap one app's screenshots independently and keeps the blast radius
+# narrow.
 
 resource "azurerm_storage_container" "agent_screenshots_glimmung" {
   name                  = "glimmung"
@@ -119,11 +70,6 @@ resource "azurerm_role_assignment" "glimmung_screenshots_uploader" {
 # Actions vars. State is the single source of truth; rotations don't
 # need a tofu re-apply just to push the new value. The role assignment
 # below grants the glimmung CI SP read access to the tfstate blob.
-#
-# (Ambience still pushes its values via the `github_actions_variable`
-# block above; folding ambience over to tofu outputs is a separate
-# follow-up — left in place for now to avoid coupling that migration
-# to this one.)
 output "agent_screenshots_storage_account" {
   value       = azurerm_storage_account.agent_screenshots.name
   description = "Name of the shared agent screenshot storage account."
