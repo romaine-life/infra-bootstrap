@@ -81,6 +81,12 @@ variable "manages_role_assignments" {
   default     = false
 }
 
+variable "visibility" {
+  description = "GitHub repository visibility: public or private."
+  type        = string
+  default     = "public"
+}
+
 variable "topics" {
   description = "GitHub repository topics for categorization and discovery."
   type        = list(string)
@@ -130,7 +136,7 @@ variable "extra_graph_app_role_values" {
 
 resource "github_repository" "repo" {
   name       = var.name
-  visibility = "public"
+  visibility = var.visibility
   auto_init  = true
   topics     = var.topics
 
