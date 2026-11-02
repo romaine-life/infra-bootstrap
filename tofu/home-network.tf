@@ -138,3 +138,41 @@ resource "azurerm_dns_cname_record" "openproject_acme_challenge" {
   ttl                 = 300
   record              = "openproject.${azurerm_dns_zone.home_acme.name}"
 }
+
+# ============================================================================
+# Forgejo (forgejo.romaine.life)
+# ============================================================================
+# Forgejo on the home NAS (nelsong6/forgejo), Nelson's git service. At home the
+# name reaches all of it (the NAS's DNS Server answers it with the LAN address);
+# from outside, the NAS's public port answers only Forgejo Actions' two
+# key-discovery paths, so Azure can trust tokens Forgejo issues to CI jobs
+# (FORGEJO-3). Same shape as Jellyfin and OpenProject: the NAS keeps the A record
+# on the home WAN IP with the nas-acme identity, scoped to this record set, and
+# issues its cert through the challenge zone.
+# ============================================================================
+
+resource "azurerm_dns_a_record" "forgejo" {
+  name                = "forgejo"
+  zone_name           = azurerm_dns_zone.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
+  ttl                 = 300
+  records             = ["24.20.230.44"]
+
+  lifecycle {
+    ignore_changes = [records]
+  }
+}
+
+resource "azurerm_role_assignment" "nas_acme_forgejo_ddns" {
+  scope                = azurerm_dns_a_record.forgejo.id
+  role_definition_name = "DNS Zone Contributor"
+  principal_id         = azuread_service_principal.nas_acme.object_id
+}
+
+resource "azurerm_dns_cname_record" "forgejo_acme_challenge" {
+  name                = "_acme-challenge.forgejo"
+  zone_name           = azurerm_dns_zone.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
+  ttl                 = 300
+  record              = "forgejo.${azurerm_dns_zone.home_acme.name}"
+}
