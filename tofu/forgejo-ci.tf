@@ -8,6 +8,7 @@
 # aud=api://AzureADTokenExchange
 # sub=repo:romaine-life/infra-bootstrap:ref:refs/heads/FORGEJO-3-batch-azure-oidc
 # Pull requests use repo:OWNER/REPO:pull_request (Forgejo 15 OIDC reference).
+# https://forgejo.org/docs/v15.0/user/actions/security-openid-connect/
 locals {
   forgejo_ci_apps = toset([
     "ambience",
