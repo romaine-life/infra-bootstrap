@@ -91,7 +91,7 @@ jobs:
         set -o pipefail
         # PEM held only in this shell (never an output var / never logged).
         export TF_VAR_github_app_pem="$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-private-key --query value -o tsv)"
-        tofu plan -out=tfplan 2>&1 | tee plan_output.txt
+        tofu plan -lock-timeout=10m -out=tfplan 2>&1 | tee plan_output.txt
 
         # Check plan for actual changes using tofu show
         PLAN_JSON=$(tofu show -json tfplan)
@@ -120,7 +120,7 @@ jobs:
       run: |
         # PEM held only in this shell (never an output var / never logged).
         export TF_VAR_github_app_pem="$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-private-key --query value -o tsv)"
-        tofu apply tfplan
+        tofu apply -lock-timeout=10m tfplan
         echo "### Apply successful" >> $GITHUB_STEP_SUMMARY
     - name: Get AKS credentials
       id: aks
