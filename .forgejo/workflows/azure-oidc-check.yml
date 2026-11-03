@@ -2,7 +2,7 @@ name: Forgejo Azure identity
 
 on:
   push:
-    branches: [FORGEJO-3-batch-azure-oidc]
+    branches: [main, FORGEJO-3-batch-azure-oidc]
   workflow_dispatch:
 
 jobs:
