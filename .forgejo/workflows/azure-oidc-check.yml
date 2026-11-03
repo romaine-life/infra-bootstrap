@@ -1,0 +1,49 @@
+name: Forgejo Azure identity
+
+on:
+  push:
+    branches: [FORGEJO-3-batch-azure-oidc]
+  workflow_dispatch:
+
+jobs:
+  azure-identity:
+    runs-on: windows-latest
+    enable-openid-connect: true
+    steps:
+      - name: Verify issued claims and Azure access
+        shell: pwsh
+        env:
+          ARM_CLIENT_ID: 043b35c3-f5de-4578-acd2-8b8f4c78f461
+          ARM_TENANT_ID: 2236b5e4-81d2-4d82-bde5-17b1037999ea
+          ARM_SUBSCRIPTION_ID: aee0cbd2-8074-4001-b610-0f8edb4eaa3c
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $uri = $env:ACTIONS_ID_TOKEN_REQUEST_URL
+          $separator = if ($uri.Contains('?')) { '&' } else { '?' }
+          $response = Invoke-RestMethod "$uri${separator}audience=api%3A%2F%2FAzureADTokenExchange" -Headers @{
+            Authorization = "Bearer $env:ACTIONS_ID_TOKEN_REQUEST_TOKEN"
+          }
+          $jwt = $response.value
+          if (-not $jwt) { throw 'Forgejo did not return an ID token' }
+          Write-Output "::add-mask::$jwt"
+          $payload = $jwt.Split('.')[1].Replace('-', '+').Replace('_', '/')
+          $payload = $payload.PadRight([int]([Math]::Ceiling($payload.Length / 4.0) * 4), '=')
+          $claims = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payload)) | ConvertFrom-Json
+          $claims | Select-Object iss, sub, aud | ConvertTo-Json -Compress | Write-Output
+          if ($claims.iss -ne 'https://forgejo.romaine.life/api/actions') { throw 'Unexpected issuer' }
+          # The branch probe records claims before federation is provisioned.
+          if ($env:GITHUB_REF -ne 'refs/heads/main') { exit 0 }
+          $login = Invoke-RestMethod "https://login.microsoftonline.com/$env:ARM_TENANT_ID/oauth2/v2.0/token" -Method Post -Body @{
+            client_id = $env:ARM_CLIENT_ID
+            scope = 'https://management.azure.com/.default'
+            grant_type = 'client_credentials'
+            client_assertion_type = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer'
+            client_assertion = $jwt
+          }
+          if (-not $login.access_token) { throw 'Azure did not return an access token' }
+          Write-Output "::add-mask::$($login.access_token)"
+          $subscription = Invoke-RestMethod "https://management.azure.com/subscriptions/$env:ARM_SUBSCRIPTION_ID`?api-version=2022-12-01" -Headers @{
+            Authorization = "Bearer $($login.access_token)"
+          }
+          if ($subscription.subscriptionId -ne $env:ARM_SUBSCRIPTION_ID) { throw 'Unexpected Azure subscription' }
+          Write-Output "Azure login succeeded: $($subscription.displayName) ($($subscription.subscriptionId))"
