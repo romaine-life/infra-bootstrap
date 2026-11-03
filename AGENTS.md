@@ -6,7 +6,7 @@ Root infrastructure repo. Creates shared Azure resources (tofu) and manages the 
 
 Two layers:
 
-- **`tofu/`** — OpenTofu managed by GitHub Actions CI. Creates AKS cluster, VNet, ACR, DNS zone, Cosmos DB, App Configuration, Key Vault references, managed identity, federated credentials, Entra app registrations. Plan on PR, apply on push to main.
+- **`tofu/`** — OpenTofu managed by Forgejo Actions CI. Creates AKS cluster, VNet, ACR, DNS zone, Cosmos DB, App Configuration, Key Vault references, managed identity, federated credentials, Entra app registrations. Plan on PR, apply on push to main.
 - **`k8s/`** — Kubernetes manifests managed by ArgoCD. Everything deployed to the cluster lives here. ArgoCD auto-syncs from git.
 
 ### Kubernetes Layout
@@ -58,7 +58,7 @@ ArgoCD authenticates humans as a **native OIDC relying party** directly to **aut
 - **infra-bootstrap** (this repo) — root infrastructure + cluster platform
 - **my-homepage**, **kill-me**, **plant-agent**, **investing**, **house-hunt**, **fzt-frontend**, **diagrams**, **llm-explorer**, **ambience**, **tank-operator**, **glimmung** — apps on AKS (each namespace + Deployment + HTTPRoute)
 - **bender-world**, **eight-queens**, **lights**, **fzt-showcase**, **landing-page** — frontend-only SWAs (intentional, kept as SWAs)
-- **pipeline-templates** — reusable GitHub Actions workflows
+- **pipeline-templates** — reusable Forgejo Actions workflows
 
 ## Historical Notes
 
