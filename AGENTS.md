@@ -56,7 +56,7 @@ ArgoCD authenticates humans as a **native OIDC relying party** directly to **aut
 ## Related Repos
 
 - **infra-bootstrap** (this repo) — root infrastructure + cluster platform
-- **my-homepage**, **kill-me**, **plant-agent**, **investing**, **house-hunt**, **fzt-frontend**, **diagrams**, **llm-explorer**, **ambience**, **tank-operator**, **glimmung** — apps on AKS (each namespace + Deployment + HTTPRoute)
+- **my-homepage**, **kill-me**, **plant-agent**, **investing**, **house-hunt**, **diagrams**, **llm-explorer**, **ambience**, **tank-operator**, **glimmung** — apps on AKS (each namespace + Deployment + HTTPRoute)
 - **bender-world**, **eight-queens**, **lights**, **fzt-showcase**, **landing-page** — frontend-only SWAs (intentional, kept as SWAs)
 - **pipeline-templates** — reusable Forgejo Actions workflows
 
@@ -65,3 +65,5 @@ ArgoCD authenticates humans as a **native OIDC relying party** directly to **aut
 - The shared `api` repo hosted every app's backend routes until 2026-04-20; each app now owns its own K8s Deployment with inline routes. api repo is archived.
 - Static Web Apps used to be the default hosting; apps that need backends migrated to AKS. SWAs remain for intentionally frontend-only apps.
 - The shared Container App Environment (`infra-aca`) was decommissioned 2026-04-20 — all apps moved to AKS.
+
+- **fzt-frontend** now runs on the NAS at fzt-frontend.home.romaine.life (FORGEJO-6), with its deploy spec in its Forgejo repository.
