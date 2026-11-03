@@ -124,7 +124,6 @@ locals {
     "fzt-automate",
     "fzt-browser",
     "fzt-desktop",
-    "fzt-frontend",
     "fzt-picker",
     "fzt-showcase",
     "fzt-terminal",
@@ -147,7 +146,7 @@ locals {
     "tank-operator",
   ])
 
-  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "crenellation", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-frontend", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "spirelens", "tank-operator"])
+  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "crenellation", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "spirelens", "tank-operator"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -155,12 +154,12 @@ locals {
     { for name, app in module.app_org : name => app.service_principal_object_id },
   )
 
-  ci_only_apps = toset(["fzt", "fzt-terminal", "fzt-frontend", "fzt-automate", "fzt-browser", "fzt-picker", "fzt-desktop", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "platform-mcp"])
+  ci_only_apps = toset(["fzt", "fzt-terminal", "fzt-automate", "fzt-browser", "fzt-picker", "fzt-desktop", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "platform-mcp"])
 
   # Apps deployed on AKS — gives the app SP AcrPush on romainecr (for CI to
   # push images). Expand as each app migrates off the shared api onto its
   # own K8s Deployment.
-  k8s_apps = toset(["ambience", "auth", "chess-tactics", "crenellation", "house-hunt", "kill-me", "fzt-frontend", "my-homepage", "diagrams", "llm-explorer", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator"])
+  k8s_apps = toset(["ambience", "auth", "chess-tactics", "crenellation", "house-hunt", "kill-me", "my-homepage", "diagrams", "llm-explorer", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator"])
 
   # Subset of k8s_apps whose pods federate to infra-shared-identity via
   # `system:serviceaccount:<app>:infra-shared`. Empty: every app has
@@ -224,7 +223,7 @@ locals {
   # workflow.
   runs_own_tofu_apps = toset([
     "ambience", "auth", "bender-world", "chess-tactics", "crenellation", "spirelens", "diagrams", "eight-queens",
-    "fzt-frontend", "fzt-showcase", "glimmung", "house-hunt", "kill-me", "lights",
+    "fzt-showcase", "glimmung", "house-hunt", "kill-me", "lights",
     "llm-explorer", "mcp-azure-personal", "mcp-github", "my-homepage", "tank-operator",
   ])
 }
@@ -269,11 +268,6 @@ import {
 # The following repos were created outside infra-bootstrap (fzt-frontend and
 # fzt-automate on 2026-04-07 as stubs, fzt-browser on 2026-04-16 during the
 # split, fzt-picker pre-split). Import tells tofu they already exist.
-
-import {
-  to = module.app_org["fzt-frontend"].github_repository.repo
-  id = "fzt-frontend"
-}
 
 import {
   to = module.app_org["fzt-automate"].github_repository.repo
@@ -372,11 +366,6 @@ moved {
 moved {
   from = module.app["llm-explorer"]
   to   = module.app_org["llm-explorer"]
-}
-
-moved {
-  from = module.app["fzt-frontend"]
-  to   = module.app_org["fzt-frontend"]
 }
 
 moved {

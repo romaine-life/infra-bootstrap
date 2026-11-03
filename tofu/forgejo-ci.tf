@@ -18,7 +18,6 @@ locals {
     "diagrams",
     "eight-queens",
     "fzt-browser",
-    "fzt-frontend",
     "fzt-showcase",
     "kill-me",
     "lights",
