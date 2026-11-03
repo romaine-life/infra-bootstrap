@@ -1,21 +1,19 @@
 name: Infrastructure
-
-on:
+'on':
   pull_request:
-    branches: [main]
+    branches:
+    - main
   push:
-    branches: [main]
-  workflow_dispatch:
-
+    branches:
+    - main
+  workflow_dispatch: null
 concurrency:
   group: opentofu-infra-bootstrap.tfstate
   cancel-in-progress: false
-
 permissions:
   id-token: write
   contents: write
   pull-requests: write
-
 jobs:
   plan:
     name: Plan
@@ -24,254 +22,231 @@ jobs:
     outputs:
       has_changes: ${{ steps.plan.outputs.has_changes }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Resolve Forgejo on the home network
+      env:
+        HOME_FORGEJO_IP: ${{ vars.HOME_FORGEJO_IP }}
+      run: |
+        test -n "$HOME_FORGEJO_IP"
+        printf '%s forgejo.romaine.life\n' "$HOME_FORGEJO_IP" | sudo tee -a /etc/hosts >/dev/null
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install Azure CLI
+      run: |
+        if ! command -v az; then
+          sudo mkdir -p /etc/apt/keyrings
+          curl --fail --silent --show-error https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/microsoft.gpg >/dev/null
+          echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ noble main' | sudo tee /etc/apt/sources.list.d/azure-cli.list >/dev/null
+          sudo apt-get update -o Dir::Etc::sourcelist=sources.list.d/azure-cli.list -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
+          sudo apt-get install -y --no-install-recommends azure-cli
+        fi
+    - uses: https://github.com/azure/setup-kubectl@v4
+      with:
+        version: v1.35.0
+    - uses: https://github.com/azure/setup-helm@v5
+    - name: Setup OpenTofu
+      uses: https://github.com/opentofu/setup-opentofu@v2
+      with:
+        tofu_version: 1.11.0
+        tofu_wrapper: false
+    - name: Azure Login via OIDC
+      uses: https://github.com/azure/login@v3
+      with:
+        client-id: ${{ vars.ARM_CLIENT_ID }}
+        tenant-id: ${{ vars.ARM_TENANT_ID }}
+        subscription-id: ${{ vars.ARM_SUBSCRIPTION_ID }}
+    - name: Fetch secrets from Key Vault
+      id: secrets
+      run: |
+        # infra-bootstrap-github-app identifiers (non-secret) for the org provider.
+        GH_APP_ID=$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-id --query value -o tsv)
+        GH_APP_INSTALL_ID=$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-installation-id --query value -o tsv)
+        echo "github_app_id=$GH_APP_ID" >> $GITHUB_OUTPUT
+        echo "github_app_installation_id=$GH_APP_INSTALL_ID" >> $GITHUB_OUTPUT
+    - name: Initialize OpenTofu
+      working-directory: tofu
+      env:
+        ARM_USE_OIDC: 'true'
+        ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID }}
+        ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID }}
+        ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
+      run: |
+        tofu init \
+          -backend-config="resource_group_name=infra" \
+          -backend-config="storage_account_name=nelsontofu" \
+          -backend-config="container_name=tfstate" \
+          -backend-config="key=infra-bootstrap.tfstate"
+    - name: Plan
+      id: plan
+      working-directory: tofu
+      env:
+        ARM_USE_OIDC: 'true'
+        ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID }}
+        ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID }}
+        ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
+        TF_VAR_github_app_id: ${{ steps.secrets.outputs.github_app_id }}
+        TF_VAR_github_app_installation_id: ${{ steps.secrets.outputs.github_app_installation_id }}
+        TF_VAR_cluster_subscription_id: ${{ vars.CLUSTER_ARM_SUBSCRIPTION_ID }}
+        TF_VAR_cluster_resource_group_name: ${{ vars.CLUSTER_RESOURCE_GROUP_NAME || 'infra' }}
+      run: |
+        set -o pipefail
+        # PEM held only in this shell (never an output var / never logged).
+        export TF_VAR_github_app_pem="$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-private-key --query value -o tsv)"
+        tofu plan -out=tfplan 2>&1 | tee plan_output.txt
 
-      - name: Install Azure CLI
-        run: |
-          if ! command -v az; then curl --fail --silent --show-error -L https://aka.ms/InstallAzureCLIDeb | sudo bash; fi
-      - uses: https://github.com/azure/setup-kubectl@v4
-        with:
-          version: v1.35.0
-      - uses: https://github.com/azure/setup-helm@v5
+        # Check plan for actual changes using tofu show
+        PLAN_JSON=$(tofu show -json tfplan)
+        RESOURCE_CHANGES=$(echo "$PLAN_JSON" | jq '[.resource_changes[]? | select((.change.actions | . != ["no-op"]) or .change.importing)] | length')
 
-      - name: Setup OpenTofu
-        uses: https://github.com/opentofu/setup-opentofu@v2
-        with:
-          tofu_version: '1.11.0'
-          tofu_wrapper: false
+        echo "Resource changes detected: $RESOURCE_CHANGES"
+        if [ "$RESOURCE_CHANGES" -gt 0 ]; then
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          echo "### Infrastructure changes detected ($RESOURCE_CHANGES resources)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+          echo "### No infrastructure changes detected" >> $GITHUB_STEP_SUMMARY
+        fi
+    - name: Apply
+      if: github.event_name != 'pull_request' && steps.plan.outputs.has_changes == 'true'
+      working-directory: tofu
+      env:
+        ARM_USE_OIDC: 'true'
+        ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID }}
+        ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID }}
+        ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
+        TF_VAR_github_app_id: ${{ steps.secrets.outputs.github_app_id }}
+        TF_VAR_github_app_installation_id: ${{ steps.secrets.outputs.github_app_installation_id }}
+        TF_VAR_cluster_subscription_id: ${{ vars.CLUSTER_ARM_SUBSCRIPTION_ID }}
+        TF_VAR_cluster_resource_group_name: ${{ vars.CLUSTER_RESOURCE_GROUP_NAME || 'infra' }}
+      run: |
+        # PEM held only in this shell (never an output var / never logged).
+        export TF_VAR_github_app_pem="$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-private-key --query value -o tsv)"
+        tofu apply tfplan
+        echo "### Apply successful" >> $GITHUB_STEP_SUMMARY
+    - name: Get AKS credentials
+      id: aks
+      if: github.event_name != 'pull_request'
+      env:
+        CLUSTER_ARM_SUBSCRIPTION_ID: ${{ vars.CLUSTER_ARM_SUBSCRIPTION_ID || vars.ARM_SUBSCRIPTION_ID }}
+        CLUSTER_RESOURCE_GROUP_NAME: ${{ vars.CLUSTER_RESOURCE_GROUP_NAME || 'infra' }}
+      run: |
+        if az aks get-credentials --subscription "$CLUSTER_ARM_SUBSCRIPTION_ID" --resource-group "$CLUSTER_RESOURCE_GROUP_NAME" --name infra-aks 2>/dev/null; then
+          echo "exists=true" >> $GITHUB_OUTPUT
+        else
+          echo "exists=false" >> $GITHUB_OUTPUT
+          echo "### Bootstrap skipped — AKS cluster not found" >> $GITHUB_STEP_SUMMARY
+        fi
+    - name: Check ArgoCD
+      id: argocd
+      if: steps.aks.outputs.exists == 'true'
+      run: |
+        if kubectl get namespace argocd 2>/dev/null \
+          && kubectl get deploy argocd-server -n argocd 2>/dev/null \
+          && kubectl get application.argoproj.io apps -n argocd 2>/dev/null; then
+          echo "status=deployed" >> $GITHUB_OUTPUT
+        else
+          echo "status=install" >> $GITHUB_OUTPUT
+        fi
+    - name: Install ArgoCD
+      if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'install'
+      env:
+        CLUSTER_ARM_SUBSCRIPTION_ID: ${{ vars.CLUSTER_ARM_SUBSCRIPTION_ID || vars.ARM_SUBSCRIPTION_ID }}
+        CLUSTER_RESOURCE_GROUP_NAME: ${{ vars.CLUSTER_RESOURCE_GROUP_NAME || 'infra' }}
+      run: |
+        kubectl delete namespace argocd --ignore-not-found --wait=true
+        kubectl delete crd \
+          applications.argoproj.io \
+          applicationsets.argoproj.io \
+          appprojects.argoproj.io \
+          --ignore-not-found --wait=true
+        kubectl delete clusterrole \
+          argocd-application-controller \
+          argocd-server \
+          --ignore-not-found --wait=true
+        kubectl delete clusterrolebinding \
+          argocd-application-controller \
+          argocd-server \
+          --ignore-not-found --wait=true
 
-      - name: Azure Login via OIDC
-        uses: https://github.com/azure/login@v3
-        with:
-          client-id: ${{ vars.ARM_CLIENT_ID }}
-          tenant-id: ${{ vars.ARM_TENANT_ID }}
-          subscription-id: ${{ vars.ARM_SUBSCRIPTION_ID }}
+        AKS_OIDC_ISSUER=$(az aks show \
+          --subscription "$CLUSTER_ARM_SUBSCRIPTION_ID" \
+          --resource-group "$CLUSTER_RESOURCE_GROUP_NAME" \
+          --name infra-aks \
+          --query oidcIssuerProfile.issuerUrl \
+          -o tsv)
+        export AKS_OIDC_ISSUER
 
-      - name: Fetch secrets from Key Vault
-        id: secrets
-        run: |
-          # infra-bootstrap-github-app identifiers (non-secret) for the org provider.
-          GH_APP_ID=$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-id --query value -o tsv)
-          GH_APP_INSTALL_ID=$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-installation-id --query value -o tsv)
-          echo "github_app_id=$GH_APP_ID" >> $GITHUB_OUTPUT
-          echo "github_app_installation_id=$GH_APP_INSTALL_ID" >> $GITHUB_OUTPUT
+        python3 - <<'PY'
+        import os
+        import re
+        from pathlib import Path
 
-      - name: Initialize OpenTofu
-        working-directory: tofu
-        env:
-          ARM_USE_OIDC: "true"
-          ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID }}
-          ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
-        run: |
-          tofu init \
-            -backend-config="resource_group_name=infra" \
-            -backend-config="storage_account_name=nelsontofu" \
-            -backend-config="container_name=tfstate" \
-            -backend-config="key=infra-bootstrap.tfstate"
+        values = Path("k8s/argocd/values.yaml").read_text()
+        values = re.sub(
+            r"issuer: https://westus2\.oic\.prod-aks\.azure\.com/[^\n]+",
+            f"issuer: {os.environ['AKS_OIDC_ISSUER']}",
+            values,
+        )
+        Path("/tmp/argocd-values.yaml").write_text(values)
+        PY
 
-      - name: Plan
-        id: plan
-        working-directory: tofu
-        env:
-          ARM_USE_OIDC: "true"
-          ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID }}
-          ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
-          TF_VAR_github_app_id: ${{ steps.secrets.outputs.github_app_id }}
-          TF_VAR_github_app_installation_id: ${{ steps.secrets.outputs.github_app_installation_id }}
-          TF_VAR_cluster_subscription_id: ${{ vars.CLUSTER_ARM_SUBSCRIPTION_ID }}
-          TF_VAR_cluster_resource_group_name: ${{ vars.CLUSTER_RESOURCE_GROUP_NAME || 'infra' }}
-        run: |
-          set -o pipefail
-          # PEM held only in this shell (never an output var / never logged).
-          export TF_VAR_github_app_pem="$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-private-key --query value -o tsv)"
-          tofu plan -out=tfplan 2>&1 | tee plan_output.txt
-
-          # Check plan for actual changes using tofu show
-          PLAN_JSON=$(tofu show -json tfplan)
-          RESOURCE_CHANGES=$(echo "$PLAN_JSON" | jq '[.resource_changes[]? | select((.change.actions | . != ["no-op"]) or .change.importing)] | length')
-
-          echo "Resource changes detected: $RESOURCE_CHANGES"
-          if [ "$RESOURCE_CHANGES" -gt 0 ]; then
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "### Infrastructure changes detected ($RESOURCE_CHANGES resources)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "### No infrastructure changes detected" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Apply
-        if: github.event_name != 'pull_request' && steps.plan.outputs.has_changes == 'true'
-        working-directory: tofu
-        env:
-          ARM_USE_OIDC: "true"
-          ARM_CLIENT_ID: ${{ vars.ARM_CLIENT_ID }}
-          ARM_TENANT_ID: ${{ vars.ARM_TENANT_ID }}
-          ARM_SUBSCRIPTION_ID: ${{ vars.ARM_SUBSCRIPTION_ID }}
-          TF_VAR_github_app_id: ${{ steps.secrets.outputs.github_app_id }}
-          TF_VAR_github_app_installation_id: ${{ steps.secrets.outputs.github_app_installation_id }}
-          TF_VAR_cluster_subscription_id: ${{ vars.CLUSTER_ARM_SUBSCRIPTION_ID }}
-          TF_VAR_cluster_resource_group_name: ${{ vars.CLUSTER_RESOURCE_GROUP_NAME || 'infra' }}
-        run: |
-          # PEM held only in this shell (never an output var / never logged).
-          export TF_VAR_github_app_pem="$(az keyvault secret show --vault-name romaine-kv --name infra-bootstrap-github-app-private-key --query value -o tsv)"
-          tofu apply tfplan
-          echo "### Apply successful" >> $GITHUB_STEP_SUMMARY
-
-      - name: Get AKS credentials
-        id: aks
-        if: github.event_name != 'pull_request'
-        env:
-          CLUSTER_ARM_SUBSCRIPTION_ID: ${{ vars.CLUSTER_ARM_SUBSCRIPTION_ID || vars.ARM_SUBSCRIPTION_ID }}
-          CLUSTER_RESOURCE_GROUP_NAME: ${{ vars.CLUSTER_RESOURCE_GROUP_NAME || 'infra' }}
-        run: |
-          if az aks get-credentials --subscription "$CLUSTER_ARM_SUBSCRIPTION_ID" --resource-group "$CLUSTER_RESOURCE_GROUP_NAME" --name infra-aks 2>/dev/null; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "### Bootstrap skipped — AKS cluster not found" >> $GITHUB_STEP_SUMMARY
-          fi
-
-      # ── Check ArgoCD ───────────────────────────────────────────────
-      - name: Check ArgoCD
-        id: argocd
-        if: steps.aks.outputs.exists == 'true'
-        run: |
-          if kubectl get namespace argocd 2>/dev/null \
-            && kubectl get deploy argocd-server -n argocd 2>/dev/null \
-            && kubectl get application.argoproj.io apps -n argocd 2>/dev/null; then
-            echo "status=deployed" >> $GITHUB_OUTPUT
-          else
-            echo "status=install" >> $GITHUB_OUTPUT
-          fi
-
-      # ── Install ArgoCD via Kustomize ─────────────────────────────
-      # Uses the same kustomization.yaml + values.yaml that ArgoCD's
-      # self-managed app uses. One definition, two consumers.
-      - name: Install ArgoCD
-        if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'install'
-        env:
-          CLUSTER_ARM_SUBSCRIPTION_ID: ${{ vars.CLUSTER_ARM_SUBSCRIPTION_ID || vars.ARM_SUBSCRIPTION_ID }}
-          CLUSTER_RESOURCE_GROUP_NAME: ${{ vars.CLUSTER_RESOURCE_GROUP_NAME || 'infra' }}
-        run: |
-          kubectl delete namespace argocd --ignore-not-found --wait=true
-          kubectl delete crd \
-            applications.argoproj.io \
-            applicationsets.argoproj.io \
-            appprojects.argoproj.io \
-            --ignore-not-found --wait=true
-          kubectl delete clusterrole \
-            argocd-application-controller \
-            argocd-server \
-            --ignore-not-found --wait=true
-          kubectl delete clusterrolebinding \
-            argocd-application-controller \
-            argocd-server \
-            --ignore-not-found --wait=true
-
-          AKS_OIDC_ISSUER=$(az aks show \
-            --subscription "$CLUSTER_ARM_SUBSCRIPTION_ID" \
-            --resource-group "$CLUSTER_RESOURCE_GROUP_NAME" \
-            --name infra-aks \
-            --query oidcIssuerProfile.issuerUrl \
-            -o tsv)
-          export AKS_OIDC_ISSUER
-
-          python3 - <<'PY'
-          import os
-          import re
-          from pathlib import Path
-
-          values = Path("k8s/argocd/values.yaml").read_text()
-          values = re.sub(
-              r"issuer: https://westus2\.oic\.prod-aks\.azure\.com/[^\n]+",
-              f"issuer: {os.environ['AKS_OIDC_ISSUER']}",
-              values,
-          )
-          Path("/tmp/argocd-values.yaml").write_text(values)
-          PY
-
-          helm repo add argo https://argoproj.github.io/argo-helm
-          helm repo update
-          helm upgrade --install argocd argo/argo-cd \
-            --version 9.5.2 \
-            --namespace argocd \
-            --create-namespace \
-            --values /tmp/argocd-values.yaml \
-            --wait \
-            --timeout 5m
-          kubectl rollout status deploy/argocd-server -n argocd --timeout=5m
-
-      # ── Docker Hub credentials for ArgoCD ──────────────────────────
-      # ArgoCD needs Docker Hub auth to pull OCI Helm charts (Docker
-      # Hub returns 401 on tag resolution even for public images).
-      - name: Configure Docker Hub repo access
-        if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'install'
-        run: |
-          DOCKER_USER=$(az keyvault secret show --vault-name romaine-kv --name docker-hub-username --query value -o tsv)
-          DOCKER_TOKEN=$(az keyvault secret show --vault-name romaine-kv --name docker-hub-token --query value -o tsv)
-          kubectl create secret generic docker-hub-repo \
-            --namespace argocd \
-            --from-literal=type=helm \
-            --from-literal=url=registry-1.docker.io \
-            --from-literal=enableOCI=true \
-            --from-literal=username="$DOCKER_USER" \
-            --from-literal=password="$DOCKER_TOKEN" \
-            --dry-run=client -o yaml | kubectl apply -f -
-          kubectl label secret docker-hub-repo \
-            --namespace argocd \
-            argocd.argoproj.io/secret-type=repository \
-            --overwrite
-
-      # ArgoCD human SSO credentials are no longer seeded at bootstrap. SSO is
-      # native OIDC direct to auth.romaine.life as a public client with PKCE
-      # (k8s/argocd/values.yaml oidc.config) — there is no client secret to
-      # seed. The local `admin` account is the break-glass until ArgoCD is up.
-
-      # ── Hand off to ArgoCD ───────────────────────────────────────
-      # Apply all Application manifests — ArgoCD auto-syncs each one.
-      # Everything else (Envoy Gateway, ExternalDNS, cert-manager,
-      # Gateway resource, ClusterIssuer, certs, routes) is managed
-      # by ArgoCD via these apps. Single source of truth.
-      - name: Apply ArgoCD apps
-        if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'install'
-        run: |
-          kubectl apply -f k8s/apps/
-          kubectl apply -f k8s/root-app.yaml
-
-      # ArgoCD cannot update the repoURL for the Application that points at
-      # k8s/apps until the bootstrap workflow reapplies root-app.yaml.
-      - name: Apply ArgoCD root app
-        if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'deployed'
-        run: kubectl apply -f k8s/root-app.yaml
-
-      # ── Summary ──────────────────────────────────────────────────
-      - name: Bootstrap summary
-        if: steps.aks.outputs.exists == 'true'
-        run: |
-          echo "### Cluster Bootstrap Status" >> $GITHUB_STEP_SUMMARY
+        helm repo add argo https://argoproj.github.io/argo-helm
+        helm repo update
+        helm upgrade --install argocd argo/argo-cd \
+          --version 9.5.2 \
+          --namespace argocd \
+          --create-namespace \
+          --values /tmp/argocd-values.yaml \
+          --wait \
+          --timeout 5m
+        kubectl rollout status deploy/argocd-server -n argocd --timeout=5m
+    - name: Configure Docker Hub repo access
+      if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'install'
+      run: |
+        DOCKER_USER=$(az keyvault secret show --vault-name romaine-kv --name docker-hub-username --query value -o tsv)
+        DOCKER_TOKEN=$(az keyvault secret show --vault-name romaine-kv --name docker-hub-token --query value -o tsv)
+        kubectl create secret generic docker-hub-repo \
+          --namespace argocd \
+          --from-literal=type=helm \
+          --from-literal=url=registry-1.docker.io \
+          --from-literal=enableOCI=true \
+          --from-literal=username="$DOCKER_USER" \
+          --from-literal=password="$DOCKER_TOKEN" \
+          --dry-run=client -o yaml | kubectl apply -f -
+        kubectl label secret docker-hub-repo \
+          --namespace argocd \
+          argocd.argoproj.io/secret-type=repository \
+          --overwrite
+    - name: Apply ArgoCD apps
+      if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'install'
+      run: |
+        kubectl apply -f k8s/apps/
+        kubectl apply -f k8s/root-app.yaml
+    - name: Apply ArgoCD root app
+      if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'deployed'
+      run: kubectl apply -f k8s/root-app.yaml
+    - name: Bootstrap summary
+      if: steps.aks.outputs.exists == 'true'
+      run: |
+        echo "### Cluster Bootstrap Status" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ steps.argocd.outputs.status }}" = "install" ]; then
+          echo "🆕 ArgoCD installed and apps applied. Components deploying via ArgoCD." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.argocd.outputs.status }}" = "install" ]; then
-            echo "🆕 ArgoCD installed and apps applied. Components deploying via ArgoCD." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "🔑 Get ArgoCD admin password:" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d" >> $GITHUB_STEP_SUMMARY
-            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "✅ ArgoCD already deployed. Apps re-applied." >> $GITHUB_STEP_SUMMARY
-          fi
-
-      - name: Release validated infrastructure
-        if: github.event_name != 'pull_request'
-        env:
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git fetch --tags
-          tag=$(git tag -l 'v0.1.*' --sort=-v:refname | head -1)
-          n=${tag##*.}
-          tag="v0.1.$((${n:-0} + 1))"
-          jq -n --arg tag "$tag" --arg sha "$GITHUB_SHA" '{tag_name:$tag,target_commitish:$sha,name:$tag,body:("Validated infrastructure source at " + $sha)}' > /tmp/release.json
-          curl --fail-with-body --silent --show-error -X POST -H "Authorization: token $TOKEN" -H 'Content-Type: application/json' --data-binary @/tmp/release.json "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/releases"
+          echo "🔑 Get ArgoCD admin password:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ ArgoCD already deployed. Apps re-applied." >> $GITHUB_STEP_SUMMARY
+        fi
+    - name: Release validated infrastructure
+      if: github.event_name != 'pull_request'
+      env:
+        TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        git fetch --tags
+        tag=$(git tag -l 'v0.1.*' --sort=-v:refname | head -1)
+        n=${tag##*.}
+        tag="v0.1.$((${n:-0} + 1))"
+        jq -n --arg tag "$tag" --arg sha "$GITHUB_SHA" '{tag_name:$tag,target_commitish:$sha,name:$tag,body:("Validated infrastructure source at " + $sha)}' > /tmp/release.json
+        curl --fail-with-body --silent --show-error -X POST -H "Authorization: token $TOKEN" -H 'Content-Type: application/json' --data-binary @/tmp/release.json "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/releases"
