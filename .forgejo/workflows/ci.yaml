@@ -34,4 +34,5 @@ jobs:
         node scripts/check-nats-chart.mjs
     - name: Verify provider locks
       working-directory: tofu/provider
-      run: tofu init -backend=false -lockfile=readonly
+      run: |
+        tofu init -backend=false -lockfile=readonly

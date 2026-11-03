@@ -223,7 +223,8 @@ jobs:
         kubectl apply -f k8s/root-app.yaml
     - name: Apply ArgoCD root app
       if: steps.aks.outputs.exists == 'true' && steps.argocd.outputs.status == 'deployed'
-      run: kubectl apply -f k8s/root-app.yaml
+      run: |
+        kubectl apply -f k8s/root-app.yaml
     - name: Bootstrap summary
       if: steps.aks.outputs.exists == 'true'
       run: |
@@ -249,4 +250,4 @@ jobs:
         n=${tag##*.}
         tag="v0.1.$((${n:-0} + 1))"
         jq -n --arg tag "$tag" --arg sha "$GITHUB_SHA" '{tag_name:$tag,target_commitish:$sha,name:$tag,body:("Validated infrastructure source at " + $sha)}' > /tmp/release.json
-        curl --fail-with-body --silent --show-error -X POST -H "Authorization: token $TOKEN" -H 'Content-Type: application/json' --data-binary @/tmp/release.json "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/releases"
+        printf 'header = "Authorization: token %s"\n' "$TOKEN" | curl --config - --fail-with-body --silent --show-error -X POST -H 'Content-Type: application/json' --data-binary @/tmp/release.json "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/releases"

@@ -34,7 +34,7 @@ jobs:
         git commit -m "Refresh OpenTofu provider locks"
         git push origin "$branch"
         jq -n --arg head "$branch" '{head:$head,base:"main",title:"Refresh OpenTofu provider locks",body:"https://openproject.romaine.life/wp/FORGEJO-3"}' > /tmp/lock-pr.json
-        curl --fail-with-body --silent --show-error -X POST -H "Authorization: token $TOKEN" -H 'Content-Type: application/json' --data-binary @/tmp/lock-pr.json "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/pulls"
+        printf 'header = "Authorization: token %s"\n' "$TOKEN" | curl --config - --fail-with-body --silent --show-error -X POST -H 'Content-Type: application/json' --data-binary @/tmp/lock-pr.json "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/pulls"
 permissions:
   contents: write
   pull-requests: write
