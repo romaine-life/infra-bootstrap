@@ -66,6 +66,45 @@ output "nas_acme_client_id" {
   value = azuread_application.nas_acme.client_id
 }
 
+# The home cluster's cert-manager (nelsong6/home-cluster, HOMEINFRA-1) issues the same
+# wildcard through the same delegated zone, for the services that move off the NAS.
+# cert-manager can't log in with a certificate, so this identity has a client secret,
+# kept in Key Vault for OpenBao to hand to the cluster; it, too, reaches only this zone.
+resource "azuread_application" "home_cluster_acme" {
+  display_name = "home-cluster-acme"
+  owners       = [data.azuread_client_config.current.object_id]
+}
+
+resource "azuread_service_principal" "home_cluster_acme" {
+  client_id = azuread_application.home_cluster_acme.client_id
+  owners    = [data.azuread_client_config.current.object_id]
+}
+
+resource "azuread_application_password" "home_cluster_acme" {
+  application_id = azuread_application.home_cluster_acme.id
+  display_name   = "cert-manager on the home cluster"
+  end_date       = "2036-09-26T00:00:00Z"
+}
+
+resource "azurerm_role_assignment" "home_cluster_acme_dns" {
+  scope                = azurerm_dns_zone.home_acme.id
+  role_definition_name = "DNS Zone Contributor"
+  principal_id         = azuread_service_principal.home_cluster_acme.object_id
+}
+
+resource "azurerm_key_vault_secret" "home_cluster_acme" {
+  name         = "home-cluster-acme"
+  key_vault_id = data.azurerm_key_vault.main.id
+  value = jsonencode({
+    tenantId       = data.azurerm_client_config.current.tenant_id
+    subscriptionId = data.azurerm_client_config.current.subscription_id
+    resourceGroup  = data.azurerm_resource_group.main.name
+    zone           = azurerm_dns_zone.home_acme.name
+    clientId       = azuread_application.home_cluster_acme.client_id
+    clientSecret   = azuread_application_password.home_cluster_acme.value
+  })
+}
+
 # ============================================================================
 # Public Jellyfin (jellyfin.romaine.life)
 # ============================================================================
