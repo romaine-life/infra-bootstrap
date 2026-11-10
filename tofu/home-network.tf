@@ -108,13 +108,14 @@ resource "azurerm_key_vault_secret" "home_cluster_acme" {
 # ============================================================================
 # Public Jellyfin (jellyfin.romaine.life)
 # ============================================================================
-# Jellyfin on the home NAS, reachable by friends. The A record tracks the
-# home WAN IP: the NAS rewrites it (dynamic DNS) with the nas-acme identity,
-# whose write access here is scoped to this single record set. tofu only
-# creates it, so the live IP is ignored.
+# Jellyfin on the home cluster (nelsong6/jellyfin), reachable by friends
+# through the NAS's DSM public entry, which passes it to the cluster. The A
+# record tracks the home WAN IP: the NAS rewrites it (dynamic DNS) with the
+# nas-acme identity, whose write access here is scoped to this single record
+# set. tofu only creates it, so the live IP is ignored.
 #
-# Its cert is issued alongside *.home.romaine.life via the same delegated
-# challenge zone, so no inbound port 80 is needed.
+# The public entry's cert is issued alongside *.home.romaine.life via the same
+# delegated challenge zone, so no inbound port 80 is needed.
 # ============================================================================
 
 resource "azurerm_dns_a_record" "jellyfin" {
@@ -144,31 +145,12 @@ resource "azurerm_dns_cname_record" "jellyfin_acme_challenge" {
 }
 
 # ============================================================================
-# Public OpenProject (openproject.romaine.life)
+# OpenProject (openproject.romaine.life)
 # ============================================================================
-# OpenProject on the home NAS, reachable by its users away from home behind
-# the auth.romaine.life gate (nelsong6/openproject). Same shape as Jellyfin:
-# the NAS keeps the A record on the home WAN IP with the nas-acme identity,
-# scoped to this record set, and issues its cert through the challenge zone.
+# OpenProject on the home cluster (nelsong6/openproject) answers only at home,
+# where the NAS's DNS Server answers its name; it has no public record. The
+# cluster's cert-manager issues its certificate through the challenge zone.
 # ============================================================================
-
-resource "azurerm_dns_a_record" "openproject" {
-  name                = "openproject"
-  zone_name           = azurerm_dns_zone.main.name
-  resource_group_name = data.azurerm_resource_group.main.name
-  ttl                 = 300
-  records             = ["24.20.230.44"]
-
-  lifecycle {
-    ignore_changes = [records]
-  }
-}
-
-resource "azurerm_role_assignment" "nas_acme_openproject_ddns" {
-  scope                = azurerm_dns_a_record.openproject.id
-  role_definition_name = "DNS Zone Contributor"
-  principal_id         = azuread_service_principal.nas_acme.object_id
-}
 
 resource "azurerm_dns_cname_record" "openproject_acme_challenge" {
   name                = "_acme-challenge.openproject"
@@ -181,13 +163,13 @@ resource "azurerm_dns_cname_record" "openproject_acme_challenge" {
 # ============================================================================
 # Forgejo (forgejo.romaine.life)
 # ============================================================================
-# Forgejo on the home NAS (nelsong6/forgejo), Nelson's git service. At home the
-# name reaches all of it (the NAS's DNS Server answers it with the LAN address);
-# from outside, the NAS's public port answers only Forgejo Actions' two
-# key-discovery paths, so Azure can trust tokens Forgejo issues to CI jobs
-# (FORGEJO-3). Same shape as Jellyfin and OpenProject: the NAS keeps the A record
-# on the home WAN IP with the nas-acme identity, scoped to this record set, and
-# issues its cert through the challenge zone.
+# Forgejo on the home cluster (nelsong6/forgejo), Nelson's git service. At home
+# the name reaches all of it (the NAS's DNS Server answers it with the cluster's
+# address); from outside, the NAS's DSM public entry passes only Forgejo
+# Actions' two key-discovery paths to the cluster, so Azure can trust tokens
+# Forgejo issues to CI jobs (FORGEJO-3). Same shape as Jellyfin: the NAS keeps
+# the A record on the home WAN IP with the nas-acme identity, scoped to this
+# record set, and issues the public entry's cert through the challenge zone.
 # ============================================================================
 
 resource "azurerm_dns_a_record" "forgejo" {

@@ -22,12 +22,6 @@ jobs:
     outputs:
       has_changes: ${{ steps.plan.outputs.has_changes }}
     steps:
-    - name: Resolve Forgejo on the home network
-      env:
-        HOME_FORGEJO_IP: ${{ vars.HOME_FORGEJO_IP }}
-      run: |
-        test -n "$HOME_FORGEJO_IP"
-        printf '%s forgejo.romaine.life\n' "$HOME_FORGEJO_IP" | sudo tee -a /etc/hosts >/dev/null
     - name: Checkout code
       uses: actions/checkout@v4
     - name: Install Azure CLI

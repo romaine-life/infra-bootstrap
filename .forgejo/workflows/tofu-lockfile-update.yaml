@@ -5,12 +5,6 @@ jobs:
   lockfile-update:
     runs-on: ubuntu-latest
     steps:
-    - name: Resolve Forgejo on the home network
-      env:
-        HOME_FORGEJO_IP: ${{ vars.HOME_FORGEJO_IP }}
-      run: |
-        test -n "$HOME_FORGEJO_IP"
-        printf '%s forgejo.romaine.life\n' "$HOME_FORGEJO_IP" | sudo tee -a /etc/hosts >/dev/null
     - uses: actions/checkout@v4
       with:
         token: ${{ secrets.PIPELINE_DISPATCH_TOKEN }}
