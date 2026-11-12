@@ -24,26 +24,27 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    - uses: romaine-life/pipeline-templates/actions/home-cache@main
     - name: Install Azure CLI
       run: |
         if ! command -v az; then
           sudo mkdir -p /etc/apt/keyrings
-          curl --fail --silent --show-error https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/microsoft.gpg >/dev/null
-          echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ noble main' | sudo tee /etc/apt/sources.list.d/azure-cli.list >/dev/null
+          curl --fail --silent --show-error https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/microsoft.gpg >/dev/null # internet: Azure install signing key
+          echo 'deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ noble main' | sudo tee /etc/apt/sources.list.d/azure-cli.list >/dev/null # internet: Azure install source
           sudo apt-get update -o Dir::Etc::sourcelist=sources.list.d/azure-cli.list -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
           sudo apt-get install -y --no-install-recommends azure-cli
         fi
-    - uses: https://github.com/azure/setup-kubectl@v4
+    - uses: azure/setup-kubectl@v4
       with:
         version: v1.35.0
-    - uses: https://github.com/azure/setup-helm@v5
+    - uses: azure/setup-helm@v5
     - name: Setup OpenTofu
-      uses: https://github.com/opentofu/setup-opentofu@v2
+      uses: opentofu/setup-opentofu@v2
       with:
         tofu_version: 1.11.0
         tofu_wrapper: false
     - name: Azure Login via OIDC
-      uses: https://github.com/azure/login@v3
+      uses: azure/login@v3
       with:
         client-id: ${{ vars.ARM_CLIENT_ID }}
         tenant-id: ${{ vars.ARM_TENANT_ID }}
@@ -176,16 +177,14 @@ jobs:
 
         values = Path("k8s/argocd/values.yaml").read_text()
         values = re.sub(
-            r"issuer: https://westus2\.oic\.prod-aks\.azure\.com/[^\n]+",
+            r"issuer: https://westus2\.oic\.prod-aks\.azure\.com/[^\n]+", # internet: Azure issuer pattern only
             f"issuer: {os.environ['AKS_OIDC_ISSUER']}",
             values,
         )
         Path("/tmp/argocd-values.yaml").write_text(values)
         PY
 
-        helm repo add argo https://argoproj.github.io/argo-helm
-        helm repo update
-        helm upgrade --install argocd argo/argo-cd \
+        helm upgrade --install argocd https://artifacts.home.romaine.life/general/github/argoproj/argo-helm/releases/download/argo-cd-9.5.2/argo-cd-9.5.2.tgz \
           --version 9.5.2 \
           --namespace argocd \
           --create-namespace \
