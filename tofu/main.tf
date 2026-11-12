@@ -118,14 +118,12 @@ locals {
     "chess-tactics",
     "crenellation",
     "spirelens",
-    "diagrams",
     "eight-queens",
     "fzt",
     "fzt-automate",
     "fzt-browser",
     "fzt-desktop",
     "fzt-picker",
-    "fzt-showcase",
     "fzt-terminal",
     "glimmung",
     "house-hunt",
@@ -146,7 +144,7 @@ locals {
     "tank-operator",
   ])
 
-  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "crenellation", "diagrams", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-picker", "fzt-showcase", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "spirelens", "tank-operator"])
+  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "crenellation", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-picker", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "spirelens", "tank-operator"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -159,11 +157,11 @@ locals {
   # Apps deployed on AKS — gives the app SP AcrPush on romainecr (for CI to
   # push images). Expand as each app migrates off the shared api onto its
   # own K8s Deployment.
-  k8s_apps = toset(["ambience", "auth", "chess-tactics", "crenellation", "house-hunt", "kill-me", "my-homepage", "diagrams", "llm-explorer", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator"])
+  k8s_apps = toset(["ambience", "auth", "chess-tactics", "crenellation", "house-hunt", "kill-me", "my-homepage", "llm-explorer", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator"])
 
   # Subset of k8s_apps whose pods federate to infra-shared-identity via
   # `system:serviceaccount:<app>:infra-shared`. Empty: every app has
-  # migrated to its own per-app identity (kill-me, house-hunt, diagrams
+  # migrated to its own per-app identity (kill-me, house-hunt
   # in their own tofu; fzt-frontend and llm-explorer in this repo via
   # fzt-frontend-identity.tf / llm-explorer-identity.tf; glimmung in
   # glimmung/tofu/identity.tf). The convention is fully retired —
@@ -183,7 +181,6 @@ locals {
   auto_merge_apps = toset(["ambience"])
   app_topics = {
     "fzt-desktop"        = ["fzt-downstream"]
-    "fzt-showcase"       = ["fzt-downstream"]
     "chess-tactics"      = ["game", "roguelike", "chess"]
     "crenellation"       = ["game", "arcade", "rampart"]
     "macrocraft"         = ["game", "rts", "godot"]
@@ -222,8 +219,8 @@ locals {
   # Add a repo here when its CI grows an `infra/` directory + `tofu`
   # workflow.
   runs_own_tofu_apps = toset([
-    "ambience", "auth", "bender-world", "chess-tactics", "crenellation", "spirelens", "diagrams", "eight-queens",
-    "fzt-showcase", "glimmung", "house-hunt", "kill-me", "lights",
+    "ambience", "auth", "bender-world", "chess-tactics", "crenellation", "spirelens", "eight-queens",
+    "glimmung", "house-hunt", "kill-me", "lights",
     "llm-explorer", "mcp-azure-personal", "mcp-github", "my-homepage", "tank-operator",
   ])
 }
@@ -323,16 +320,6 @@ moved {
   to   = module.app["fzt"]
 }
 
-moved {
-  from = module.app["fuzzy-tiers-showcase"]
-  to   = module.app["fzt-showcase"]
-}
-
-moved {
-  from = module.app["infra-diagram"]
-  to   = module.app["diagrams"]
-}
-
 # mcp-azure-personal: repo was originally created via the for_each as
 # "mcp-azure-admin" on 2026-05-05, then renamed on github.com via
 # romaine-life/mcp-azure-personal#1 the same day. The for_each key never
@@ -351,11 +338,6 @@ moved {
 moved {
   from = module.app["my-homepage"]
   to   = module.app_org["my-homepage"]
-}
-
-moved {
-  from = module.app["diagrams"]
-  to   = module.app_org["diagrams"]
 }
 
 moved {
@@ -459,11 +441,6 @@ moved {
 moved {
   from = module.app["fzt-picker"]
   to   = module.app_org["fzt-picker"]
-}
-
-moved {
-  from = module.app["fzt-showcase"]
-  to   = module.app_org["fzt-showcase"]
 }
 
 moved {

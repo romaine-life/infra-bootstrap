@@ -56,8 +56,8 @@ ArgoCD authenticates humans as a **native OIDC relying party** directly to **aut
 ## Related Repos
 
 - **infra-bootstrap** (this repo) — root infrastructure + cluster platform
-- **my-homepage**, **kill-me**, **plant-agent**, **investing**, **house-hunt**, **diagrams**, **llm-explorer**, **ambience**, **tank-operator**, **glimmung** — apps on AKS (each namespace + Deployment + HTTPRoute)
-- **bender-world**, **eight-queens**, **lights**, **fzt-showcase**, **landing-page** — frontend-only SWAs (intentional, kept as SWAs)
+- **my-homepage**, **kill-me**, **plant-agent**, **investing**, **house-hunt**, **llm-explorer**, **ambience**, **tank-operator**, **glimmung** — apps on AKS (each namespace + Deployment + HTTPRoute)
+- **bender-world**, **eight-queens**, **lights**, **landing-page** — frontend-only SWAs (intentional, kept as SWAs)
 - **pipeline-templates** — reusable Forgejo Actions workflows
 
 ## Historical Notes
