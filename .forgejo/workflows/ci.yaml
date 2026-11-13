@@ -1,33 +1,43 @@
 name: CI
-'on':
-  pull_request: null
+
+on:
+  pull_request:
   push:
-    branches:
-    - main
-  workflow_dispatch: null
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: romaine-life/pipeline-templates/actions/check-fetches@main
+
   validate:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: romaine-life/pipeline-templates/actions/check-fetches@main
-    - uses: opentofu/setup-opentofu@v2
-      with:
-        tofu_version: 1.11.0
-        tofu_wrapper: false
-    - name: Validate conventions, formatting and NATS chart
-      run: |
-        test -z "$(git ls-files '*.yml')"
-        bad=$(git ls-files '*_*' | grep -vE 'PULL_REQUEST_TEMPLATE|ISSUE_TEMPLATE|\.(md|js|py|webp|png|jpe?g|gif|svg|ico|txt)$' || true)
-        test -z "$bad" || { echo "$bad"; exit 1; }
-        while IFS= read -r file; do
-          if [ -s "$file" ] && [ "$(tail -c 1 "$file" | wc -l)" -eq 0 ]; then
-            echo "Missing trailing newline: $file"; exit 1
-          fi
-        done < <(git grep -Il '')
-        tofu fmt -recursive -check
-        node scripts/check-nats-chart.mjs
-    - name: Verify provider locks
-      working-directory: tofu/provider
-      run: |
-        tofu init -backend=false -lockfile=readonly
+      - uses: actions/checkout@v4
+      - uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_version: 1.11.0
+          tofu_wrapper: false
+      - name: Validate conventions, formatting and NATS chart
+        run: |
+          test -z "$(git ls-files '*.yml')"
+          bad=$(git ls-files '*_*' | grep -vE 'PULL_REQUEST_TEMPLATE|ISSUE_TEMPLATE|\.(md|js|py|webp|png|jpe?g|gif|svg|ico|txt)$' || true)
+          test -z "$bad" || { echo "$bad"; exit 1; }
+          while IFS= read -r file; do
+            if [ -s "$file" ] && [ "$(tail -c 1 "$file" | wc -l)" -eq 0 ]; then
+              echo "Missing trailing newline: $file"; exit 1
+            fi
+          done < <(git grep -Il '')
+          tofu fmt -recursive -check
+          node scripts/check-nats-chart.mjs
+      - name: Verify provider locks
+        working-directory: tofu/provider
+        run: |
+          tofu init -backend=false -lockfile=readonly
