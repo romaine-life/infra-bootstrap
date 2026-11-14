@@ -145,22 +145,6 @@ resource "azurerm_dns_cname_record" "jellyfin_acme_challenge" {
 }
 
 # ============================================================================
-# OpenProject (openproject.romaine.life)
-# ============================================================================
-# OpenProject on the home cluster (nelsong6/openproject) answers only at home,
-# where the NAS's DNS Server answers its name; it has no public record. The
-# cluster's cert-manager issues its certificate through the challenge zone.
-# ============================================================================
-
-resource "azurerm_dns_cname_record" "openproject_acme_challenge" {
-  name                = "_acme-challenge.openproject"
-  zone_name           = azurerm_dns_zone.main.name
-  resource_group_name = data.azurerm_resource_group.main.name
-  ttl                 = 300
-  record              = "openproject.${azurerm_dns_zone.home_acme.name}"
-}
-
-# ============================================================================
 # Forgejo (forgejo.romaine.life)
 # ============================================================================
 # Forgejo on the home cluster (nelsong6/forgejo), Nelson's git service. At home
