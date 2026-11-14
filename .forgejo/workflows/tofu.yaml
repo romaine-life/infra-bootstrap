@@ -24,19 +24,28 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    - uses: romaine-life/pipeline-templates/actions/home-cache@main
     - uses: romaine-life/pipeline-templates/actions/azure-cli@main
-    - uses: azure/setup-kubectl@v4
-      with:
-        version: v1.35.0
+    - name: Install kubectl through Artifact Keeper
+      env:
+        VERSION: v1.35.0
+      run: |
+        set -euo pipefail
+        base="https://artifacts.home.romaine.life/general/k8s-dl/release/$VERSION/bin/linux/amd64"
+        dir="$RUNNER_TEMP/kubectl"
+        mkdir -p "$dir"
+        curl -fsSL -o "$dir/kubectl" "$base/kubectl"
+        echo "$(curl -fsSL "$base/kubectl.sha256")  $dir/kubectl" | sha256sum -c -
+        chmod +x "$dir/kubectl"
+        echo "$dir" >> "$GITHUB_PATH"
     - uses: azure/setup-helm@v5
       with:
         version: v4.3.1
         downloadBaseURL: https://artifacts.home.romaine.life/general/helm-downloads/
     - name: Setup OpenTofu
-      uses: opentofu/setup-opentofu@v2
+      uses: romaine-life/pipeline-templates/actions/setup-opentofu@main
       with:
-        tofu_version: 1.11.0
-        tofu_wrapper: false
+        tofu-version: 1.11.0
     - name: Azure Login via OIDC
       uses: azure/login@v3
       with:
