@@ -1,0 +1,100 @@
+name: Argo CD
+
+# The deploy no suite runs here: Argo CD on infra-aks. A merge that changes the root app
+# (k8s/root-app.yaml, which Argo CD doesn't manage itself) applies it; a cluster with no
+# Argo CD (a rebuilt infra-aks) gets it installed and its apps applied, after which Argo CD
+# manages itself from k8s/argocd. After a rebuild, start this from the Actions page. The
+# tofu suite plans and applies tofu/ (pipeline-templates fleet.json).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: argocd-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    enable-openid-connect: true
+    env:
+      CLUSTER_ARM_SUBSCRIPTION_ID: ${{ vars.CLUSTER_ARM_SUBSCRIPTION_ID }}
+      CLUSTER_RESOURCE_GROUP_NAME: infra
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = workflow_dispatch ] || git diff --name-only "$BEFORE" HEAD | grep -qE '^k8s/root-app\.yaml$|^\.forgejo/workflows/argocd\.yaml$'; then
+            echo run=true >> "$GITHUB_OUTPUT"
+          fi
+      - uses: romaine-life/pipeline-templates/actions/home-cache@main
+        if: steps.diff.outputs.run == 'true'
+      - uses: romaine-life/pipeline-templates/actions/azure-cli@main
+        if: steps.diff.outputs.run == 'true'
+      - name: Install kubectl through Artifact Keeper
+        if: steps.diff.outputs.run == 'true'
+        env:
+          VERSION: v1.35.0
+        run: |
+          set -euo pipefail
+          base="https://artifacts.home.romaine.life/general/k8s-dl/release/$VERSION/bin/linux/amd64"
+          dir="$RUNNER_TEMP/kubectl"
+          mkdir -p "$dir"
+          curl -fsSL -o "$dir/kubectl" "$base/kubectl"
+          echo "$(curl -fsSL "$base/kubectl.sha256")  $dir/kubectl" | sha256sum -c -
+          chmod +x "$dir/kubectl"
+          echo "$dir" >> "$GITHUB_PATH"
+      - uses: azure/setup-helm@v5
+        if: steps.diff.outputs.run == 'true'
+        with:
+          version: v4.3.1
+          downloadBaseURL: https://artifacts.home.romaine.life/general/helm-downloads/
+      - uses: azure/login@v3
+        if: steps.diff.outputs.run == 'true'
+        with:
+          client-id: ${{ vars.ARM_CLIENT_ID }}
+          tenant-id: ${{ vars.ARM_TENANT_ID }}
+          subscription-id: ${{ vars.ARM_SUBSCRIPTION_ID }}
+      - name: Read the cluster's Argo CD
+        id: argocd
+        if: steps.diff.outputs.run == 'true'
+        run: |
+          az aks get-credentials --subscription "$CLUSTER_ARM_SUBSCRIPTION_ID" --resource-group "$CLUSTER_RESOURCE_GROUP_NAME" --name infra-aks
+          if kubectl get namespace argocd && kubectl get deploy argocd-server -n argocd && kubectl get application.argoproj.io apps -n argocd; then
+            echo status=deployed >> "$GITHUB_OUTPUT"
+          else
+            echo status=install >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install Argo CD
+        if: steps.argocd.outputs.status == 'install'
+        run: |
+          set -euo pipefail
+          kubectl delete namespace argocd --ignore-not-found --wait=true
+          kubectl delete crd applications.argoproj.io applicationsets.argoproj.io appprojects.argoproj.io --ignore-not-found --wait=true
+          kubectl delete clusterrole argocd-application-controller argocd-server --ignore-not-found --wait=true
+          kubectl delete clusterrolebinding argocd-application-controller argocd-server --ignore-not-found --wait=true
+          helm upgrade --install argocd https://artifacts.home.romaine.life/general/github/argoproj/argo-helm/releases/download/argo-cd-9.5.2/argo-cd-9.5.2.tgz \
+            --version 9.5.2 --namespace argocd --create-namespace --values k8s/argocd/values.yaml
+          docker_user=$(az keyvault secret show --vault-name romaine-kv --name docker-hub-username --query value -o tsv)
+          docker_token=$(az keyvault secret show --vault-name romaine-kv --name docker-hub-token --query value -o tsv)
+          kubectl create secret generic docker-hub-repo --namespace argocd \
+            --from-literal=type=helm --from-literal=url=registry-1.docker.io --from-literal=enableOCI=true \
+            --from-literal=username="$docker_user" --from-literal=password="$docker_token" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label secret docker-hub-repo --namespace argocd argocd.argoproj.io/secret-type=repository --overwrite
+          kubectl apply -f k8s/apps/
+      - name: Apply the root app
+        if: steps.argocd.outputs.status != ''
+        run: kubectl apply -f k8s/root-app.yaml

@@ -50,14 +50,22 @@ provider "azuread" {
 }
 
 # Single GitHub provider for the romaine-life org, authenticating as the
-# org-owned `infra-bootstrap-github-app` (app-auth). The personal nelsong6
-# provider + PAT are retired now that all repos live in the org.
+# org-owned `infra-bootstrap-github-app` (app id 3942172, app-auth). Its
+# credentials are read from romaine-kv as ephemeral values, so they stay out of
+# the state and the plan.
+ephemeral "azurerm_key_vault_secret" "github_app" {
+  for_each = toset(["id", "installation-id", "private-key"])
+
+  name         = "infra-bootstrap-github-app-${each.key}"
+  key_vault_id = data.azurerm_key_vault.main.id
+}
+
 provider "github" {
   owner = "romaine-life"
 
   app_auth {
-    id              = var.github_app_id
-    installation_id = var.github_app_installation_id
-    pem_file        = var.github_app_pem
+    id              = ephemeral.azurerm_key_vault_secret.github_app["id"].value
+    installation_id = ephemeral.azurerm_key_vault_secret.github_app["installation-id"].value
+    pem_file        = ephemeral.azurerm_key_vault_secret.github_app["private-key"].value
   }
 }

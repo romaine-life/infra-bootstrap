@@ -6,7 +6,7 @@ Root infrastructure repo. Creates shared Azure resources (tofu) and manages the 
 
 Two layers:
 
-- **`tofu/`** — OpenTofu managed by Forgejo Actions CI. Creates AKS cluster, VNet, ACR, DNS zone, Cosmos DB, App Configuration, Key Vault references, managed identity, federated credentials, Entra app registrations. Plan on PR, apply on push to main.
+- **`tofu/`** — OpenTofu run by pipeline-templates' tofu suite (its `fleet.json` entry). Creates AKS cluster, VNet, ACR, DNS zone, Cosmos DB, App Configuration, Key Vault references, managed identity, federated credentials, Entra app registrations. Plan on PR, apply on push to main.
 - **`k8s/`** — Kubernetes manifests managed by ArgoCD. Everything deployed to the cluster lives here. ArgoCD auto-syncs from git.
 
 ### Kubernetes Layout
@@ -32,7 +32,7 @@ Tofu outputs → Key Vault → ExternalSecrets Operator → K8s Secrets. No manu
 
 ### Bootstrap
 
-The CI workflow (`tofu.yaml`) has a bootstrap job that runs once: installs ArgoCD via Kustomize (same definition ArgoCD uses to self-manage), creates repo/registry secrets, and applies the Application manifests. After first run, ArgoCD owns everything.
+`.forgejo/workflows/argocd.yaml` applies `k8s/root-app.yaml` when a merge changes it, and on a cluster with no ArgoCD (a rebuilt `infra-aks`; start it from the Actions page) installs ArgoCD with the chart and values ArgoCD then self-manages from, creates the registry secret, and applies the Application manifests. After that, ArgoCD owns everything. `.forgejo/workflows/checks.yaml` keeps the file conventions, the NATS chart guard and the shared provider lock check.
 
 ## Cluster Components
 
