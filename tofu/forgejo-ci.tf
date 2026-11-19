@@ -32,6 +32,12 @@ locals {
       "romaine-life/infra-bootstrap" = data.azuread_application.infra_ci.id
       "romaine-life/landing-page"    = data.azuread_application.main.id
     },
+    # Repos that enabled Actions after the Forgejo 16 upgrade get the id-based
+    # subject, repo:<owner>-<owner id>/<repo>-<repo id>:... (services/actions/auth.go
+    # generateOIDCSub in Forgejo v17.0).
+    {
+      "romaine-life-2/terminal-share-173" = module.app_org["terminal-share"].application_id
+    },
   )
 }
 
