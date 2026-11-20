@@ -38,11 +38,13 @@ locals {
     {
       "romaine-life-2/terminal-share-173" = module.app_org["terminal-share"].application_id
     },
-    # nelsong6/openbao had Actions before that upgrade: its Actions unit's config in
-    # Forgejo's database reads {"OIDCSubjectFormat":"legacy-forgejo-v15"} (BAO-15), so
-    # its jobs carry the name-based subject.
+    # nelsong6/openbao and nelsong6/openproject had Actions before that upgrade: their
+    # Actions units' config in Forgejo's database reads
+    # {"OIDCSubjectFormat":"legacy-forgejo-v15"} (BAO-15, OPADMIN-37), so their jobs carry
+    # the name-based subject.
     {
-      "nelsong6/openbao" = azuread_application.openbao_ci.id
+      "nelsong6/openbao"     = azuread_application.openbao_ci.id
+      "nelsong6/openproject" = azuread_application.openproject_ci.id
     },
   )
 }
