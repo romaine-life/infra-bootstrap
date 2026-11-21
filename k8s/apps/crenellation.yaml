@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/romaine-life/crenellation.git
-    targetRevision: prod
+    targetRevision: main
     path: k8s
   destination:
     server: https://kubernetes.default.svc
