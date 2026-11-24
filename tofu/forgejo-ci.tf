@@ -36,7 +36,8 @@ locals {
     # subject, repo:<owner>-<owner id>/<repo>-<repo id>:... (services/actions/auth.go
     # generateOIDCSub in Forgejo v17.0).
     {
-      "romaine-life-2/terminal-share-173" = module.app_org["terminal-share"].application_id
+      "romaine-life-2/terminal-share-173"    = module.app_org["terminal-share"].application_id
+      "romaine-life-2/pokemon-generator-178" = module.app_org["pokemon-generator"].application_id
     },
     # nelsong6/openbao and nelsong6/openproject had Actions before that upgrade: their
     # Actions units' config in Forgejo's database reads

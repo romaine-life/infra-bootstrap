@@ -141,11 +141,12 @@ locals {
     "mcp-tank-operator",
     "my-homepage",
     "platform-mcp",
+    "pokemon-generator",
     "tank-operator",
     "terminal-share",
   ])
 
-  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "crenellation", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-picker", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "spirelens", "tank-operator", "terminal-share"])
+  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "crenellation", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-picker", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "pokemon-generator", "spirelens", "tank-operator", "terminal-share"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -158,7 +159,7 @@ locals {
   # Apps deployed on AKS — gives the app SP AcrPush on romainecr (for CI to
   # push images). Expand as each app migrates off the shared api onto its
   # own K8s Deployment.
-  k8s_apps = toset(["ambience", "auth", "chess-tactics", "crenellation", "house-hunt", "kill-me", "my-homepage", "llm-explorer", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "terminal-share"])
+  k8s_apps = toset(["ambience", "auth", "chess-tactics", "crenellation", "house-hunt", "kill-me", "my-homepage", "llm-explorer", "tank-operator", "glimmung", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "pokemon-generator", "terminal-share"])
 
   # Subset of k8s_apps whose pods federate to infra-shared-identity via
   # `system:serviceaccount:<app>:infra-shared`. Empty: every app has
