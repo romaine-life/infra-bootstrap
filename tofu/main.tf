@@ -181,7 +181,7 @@ locals {
   app_default_branch = {
     "fzt" = "main"
   }
-  private_apps    = toset(["lights"])
+  private_apps    = toset(["dungeon-crawler", "lights"])
   auto_merge_apps = toset(["ambience"])
   app_topics = {
     "fzt-desktop"        = ["fzt-downstream"]
