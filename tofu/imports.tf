@@ -27,3 +27,10 @@ import {
   to = module.app_org["mcp-grafana"].github_repository.repo
   id = "mcp-grafana"
 }
+
+# pokosmari's GitHub copy was created as the Forgejo push mirror's target before this PR
+# (SES-234); the import adopts it into the per-app module.
+import {
+  to = module.app_org["pokosmari"].github_repository.repo
+  id = "pokosmari"
+}
