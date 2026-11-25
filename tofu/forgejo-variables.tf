@@ -28,7 +28,7 @@ locals {
   # The apps whose Forgejo variables tofu writes. The other apps in forgejo-ci.tf still have
   # theirs set by hand, which the provider would refuse to create over: they join once their
   # hand-set variables are deleted (PG-1).
-  forgejo_variable_apps = toset(["pokosmari"])
+  forgejo_variable_apps = toset(["dungeon-crawler", "pokosmari"])
 
   forgejo_variables = merge([
     for app in local.forgejo_variable_apps : {
