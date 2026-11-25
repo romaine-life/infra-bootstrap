@@ -7,3 +7,8 @@ output "application_id" {
   value       = azuread_application.app.id
   description = "Application resource ID for additional CI identity federation."
 }
+
+output "client_id" {
+  value       = azuread_application.app.client_id
+  description = "The app's client id: its CI's ARM_CLIENT_ID, on GitHub and on Forgejo."
+}

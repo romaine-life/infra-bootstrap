@@ -20,6 +20,15 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.0"
     }
+    # forgejo-variables.tf: the apps' Forgejo Actions variables, signed in by the job's token.
+    forgejo = {
+      source  = "svalabs/forgejo"
+      version = "1.7.0"
+    }
+    external = {
+      source  = "hashicorp/external"
+      version = "2.3.5"
+    }
   }
   backend "azurerm" {
     resource_group_name  = "infra"
