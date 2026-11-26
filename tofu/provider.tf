@@ -2,32 +2,34 @@ terraform {
   required_version = ">= 1.6.0"
   required_providers {
     azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"
+      source = "hashicorp/azurerm"
     }
     azuread = {
-      source  = "hashicorp/azuread"
-      version = "~> 3.0"
+      source = "hashicorp/azuread"
     }
     github = {
-      source  = "integrations/github"
-      version = "~> 6.0"
+      source = "integrations/github"
     }
     azapi = {
       source = "azure/azapi"
     }
     random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
+      source = "hashicorp/random"
     }
     # forgejo-variables.tf: the apps' Forgejo Actions variables, signed in by the job's token.
+    # Nelson's fork of svalabs/forgejo (romaine-life/terraform-provider-forgejo), which adds
+    # import for forgejo_repository_action_variable; published to Artifact Keeper.
     forgejo = {
-      source  = "svalabs/forgejo"
-      version = "1.7.0"
+      source = "artifacts.home.romaine.life/romaine-life/forgejo"
+    }
+    # Upstream svalabs/forgejo, which the state still records for pokosmari's and
+    # dungeon-crawler's variables: declared until an apply has moved them to the fork, then
+    # removed (PIPT-59).
+    svalabs-forgejo = {
+      source = "svalabs/forgejo"
     }
     external = {
-      source  = "hashicorp/external"
-      version = "2.3.5"
+      source = "hashicorp/external"
     }
   }
   backend "azurerm" {

@@ -1,16 +1,13 @@
 terraform {
   required_providers {
     github = {
-      source  = "integrations/github"
-      version = "~> 6.0"
+      source = "integrations/github"
     }
     azuread = {
-      source  = "hashicorp/azuread"
-      version = "~> 3.0"
+      source = "hashicorp/azuread"
     }
     azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"
+      source = "hashicorp/azurerm"
       # `azurerm.cluster` lets this module grant role assignments / write
       # resources in the cluster's subscription (var.cluster_subscription_id)
       # using a provider configured with that sub. The root module is

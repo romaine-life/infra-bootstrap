@@ -8,8 +8,8 @@
 # (write:repository) for tofu/ci.yml on a push or dispatch of main, `infra-bootstrap-tofu-plan`
 # (read:repository) for its pull requests' plans.
 #
-# The provider can't import a variable and refuses to create one that already exists, so a
-# repo's hand-set variables are deleted before its first apply here.
+# A repo's variables set by hand before it joined are adopted by the import blocks below, not
+# deleted: the provider refuses to create a variable that already exists.
 
 data "external" "forgejo_job" {
   program = ["sh", "${path.module}/forgejo-job-token.sh"]
@@ -24,11 +24,18 @@ provider "forgejo" {
   api_token = data.external.forgejo_job.result.forgejo_jwt
 }
 
+provider "svalabs-forgejo" {
+  host      = "https://forgejo.romaine.life"
+  api_token = data.external.forgejo_job.result.forgejo_jwt
+}
+
 locals {
-  # The apps whose Forgejo variables tofu writes. The other apps in forgejo-ci.tf still have
-  # theirs set by hand, which the provider would refuse to create over: they join once their
-  # hand-set variables are deleted (PG-1).
-  forgejo_variable_apps = toset(["dungeon-crawler", "pokosmari"])
+  # Every app module repository whose CI runs on Forgejo (forgejo-ci.tf).
+  forgejo_variable_apps = setunion(local.forgejo_ci_apps, ["terminal-share", "pokemon-generator", "pokosmari", "dungeon-crawler"])
+
+  # The repositories whose variables were set by hand before tofu wrote them (IB-3). tank-operator
+  # had none on Forgejo, so tofu creates its.
+  forgejo_variable_imports = setsubtract(local.forgejo_variable_apps, ["pokosmari", "dungeon-crawler", "tank-operator"])
 
   forgejo_variables = merge([
     for app in local.forgejo_variable_apps : {
@@ -52,4 +59,10 @@ resource "forgejo_repository_action_variable" "app" {
   repository_id = data.forgejo_repository.app[each.value.app].id
   name          = each.value.name
   data          = each.value.value
+}
+
+import {
+  for_each = { for key, v in local.forgejo_variables : key => v if contains(local.forgejo_variable_imports, v.app) }
+  to       = forgejo_repository_action_variable.app[each.key]
+  id       = "romaine-life/${each.key}"
 }
