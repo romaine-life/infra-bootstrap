@@ -24,11 +24,6 @@ provider "forgejo" {
   api_token = data.external.forgejo_job.result.forgejo_jwt
 }
 
-provider "svalabs-forgejo" {
-  host      = "https://forgejo.romaine.life"
-  api_token = data.external.forgejo_job.result.forgejo_jwt
-}
-
 locals {
   # Every app module repository whose CI runs on Forgejo (forgejo-ci.tf).
   forgejo_variable_apps = setunion(local.forgejo_ci_apps, ["terminal-share", "pokemon-generator", "pokosmari", "dungeon-crawler"])

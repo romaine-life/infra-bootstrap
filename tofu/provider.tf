@@ -22,12 +22,6 @@ terraform {
     forgejo = {
       source = "artifacts.home.romaine.life/romaine-life/forgejo"
     }
-    # Upstream svalabs/forgejo, which the state still records for pokosmari's and
-    # dungeon-crawler's variables: declared until an apply has moved them to the fork, then
-    # removed (PIPT-59).
-    svalabs-forgejo = {
-      source = "svalabs/forgejo"
-    }
     external = {
       source = "hashicorp/external"
     }
