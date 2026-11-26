@@ -146,9 +146,10 @@ locals {
     "tank-operator",
     "terminal-share",
     "dungeon-crawler",
+    "logline",
   ])
 
-  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "crenellation", "dungeon-crawler", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-picker", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "pokemon-generator", "pokosmari", "spirelens", "tank-operator", "terminal-share"])
+  org_apps      = toset(["ambience", "auth", "bender-world", "chess-tactics", "crenellation", "dungeon-crawler", "eight-queens", "fzt", "fzt-automate", "fzt-browser", "fzt-desktop", "fzt-picker", "fzt-terminal", "glimmung", "house-hunt", "kill-me", "lights", "llm-explorer", "logline", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "my-homepage", "platform-mcp", "pokemon-generator", "pokosmari", "spirelens", "tank-operator", "terminal-share"])
   personal_apps = setsubtract(local.app_names, local.org_apps)
 
   app_service_principal_object_ids = merge(
@@ -156,7 +157,7 @@ locals {
     { for name, app in module.app_org : name => app.service_principal_object_id },
   )
 
-  ci_only_apps = toset(["fzt", "fzt-terminal", "fzt-automate", "fzt-browser", "fzt-picker", "fzt-desktop", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "platform-mcp"])
+  ci_only_apps = toset(["fzt", "fzt-terminal", "fzt-automate", "fzt-browser", "fzt-picker", "fzt-desktop", "logline", "macrocraft", "mcp-argocd", "mcp-auth", "mcp-azure-personal", "mcp-grafana", "mcp-github", "mcp-glimmung", "mcp-k8s", "mcp-tank-operator", "platform-mcp"])
 
   # Apps deployed on AKS — gives the app SP AcrPush on romainecr (for CI to
   # push images). Expand as each app migrates off the shared api onto its
