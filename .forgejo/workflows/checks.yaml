@@ -2,8 +2,7 @@ name: Checks
 
 # The checks no suite runs here: this repository's file conventions (a trailing newline,
 # .yaml rather than .yml, no underscores in names but where a format expects them), which
-# read every tracked file and so run on every change; the NATS chart guard; and the shared
-# provider lock in tofu/provider, which other repositories' CI still downloads. The tofu
+# read every tracked file and so run on every change; and the NATS chart guard. The tofu
 # suite formats, validates and plans tofu/ (pipeline-templates fleet.json).
 
 on:
@@ -44,17 +43,6 @@ jobs:
         run: |
           files=$(git diff --name-only "$BASE...HEAD")
           if grep -qE '^k8s/nats/|^scripts/check-nats-chart\.mjs$|^\.forgejo/workflows/checks\.yaml$' <<< "$files"; then echo nats=true >> "$GITHUB_OUTPUT"; fi
-          if grep -qE '^tofu/provider/|^\.forgejo/workflows/checks\.yaml$' <<< "$files"; then echo providers=true >> "$GITHUB_OUTPUT"; fi
       - name: The NATS chart keeps its hardening
         if: steps.diff.outputs.nats == 'true'
         run: node scripts/check-nats-chart.mjs
-      - uses: romaine-life/pipeline-templates/actions/home-cache@main
-        if: steps.diff.outputs.providers == 'true'
-      - uses: romaine-life/pipeline-templates/actions/setup-opentofu@main
-        if: steps.diff.outputs.providers == 'true'
-        with:
-          tofu-version: 1.11.0
-      - name: The shared provider lock matches its pins
-        if: steps.diff.outputs.providers == 'true'
-        working-directory: tofu/provider
-        run: tofu init -backend=false -lockfile=readonly

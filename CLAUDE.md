@@ -32,7 +32,7 @@ Tofu outputs → Key Vault → ExternalSecrets Operator → K8s Secrets. No manu
 
 ### Bootstrap
 
-`.forgejo/workflows/argocd.yaml` applies `k8s/root-app.yaml` when a merge changes it, and on a cluster with no ArgoCD (a rebuilt `infra-aks`; start it from the Actions page) installs ArgoCD with the chart and values ArgoCD then self-manages from, creates the registry secret, and applies the Application manifests. After that, ArgoCD owns everything. `.forgejo/workflows/checks.yaml` keeps the file conventions, the NATS chart guard and the shared provider lock check.
+`.forgejo/workflows/argocd.yaml` applies `k8s/root-app.yaml` when a merge changes it, and on a cluster with no ArgoCD (a rebuilt `infra-aks`; start it from the Actions page) installs ArgoCD with the chart and values ArgoCD then self-manages from, creates the registry secret, and applies the Application manifests. After that, ArgoCD owns everything. `.forgejo/workflows/checks.yaml` keeps the file conventions and the NATS chart guard; providers come from the tofu suite's shared set (pipeline-templates `suites/tofu/providers`).
 
 ## Cluster Components
 
