@@ -71,4 +71,4 @@ ArgoCD authenticates humans as a **native OIDC relying party** directly to **aut
 - Static Web Apps used to be the default hosting; apps that need backends migrated to AKS. SWAs remain for intentionally frontend-only apps.
 - The shared Container App Environment (`infra-aca`) was decommissioned 2026-04-20 — all apps moved to AKS.
 
-- **fzt-frontend** now runs on the NAS at fzt-frontend.home.romaine.life (FORGEJO-6), with its deploy spec in its Forgejo repository.
+- **fzt-frontend** left Azure for home (FORGEJO-6) and now runs on the home cluster (nelsong6/home-cluster, HOMEINFRA-1) at fzt-frontend.home.romaine.life, its manifests in its own repository's `k8s/`, which the cluster's Argo CD syncs.
