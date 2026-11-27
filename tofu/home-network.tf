@@ -200,10 +200,13 @@ resource "azurerm_dns_cname_record" "forgejo_sync" {
   record              = "forgejo.${azurerm_dns_zone.main.name}"
 }
 
+# cert-manager writes this challenge's TXT under its own full name inside the challenge
+# zone, so the alias names that record (AT-8): forgejo-sync's first challenge, made before
+# this alias existed, wrote _acme-challenge.forgejo-sync.romaine.life.home-acme.romaine.life.
 resource "azurerm_dns_cname_record" "forgejo_sync_acme_challenge" {
   name                = "_acme-challenge.forgejo-sync"
   zone_name           = azurerm_dns_zone.main.name
   resource_group_name = data.azurerm_resource_group.main.name
   ttl                 = 300
-  record              = "forgejo-sync.${azurerm_dns_zone.home_acme.name}"
+  record              = "_acme-challenge.forgejo-sync.romaine.life.${azurerm_dns_zone.home_acme.name}"
 }
