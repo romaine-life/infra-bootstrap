@@ -181,3 +181,29 @@ resource "azurerm_dns_cname_record" "forgejo_acme_challenge" {
   ttl                 = 300
   record              = "forgejo.${azurerm_dns_zone.home_acme.name}"
 }
+
+# ============================================================================
+# forgejo-sync (forgejo-sync.romaine.life)
+# ============================================================================
+# romaine-life/forgejo-sync on the home cluster takes GitHub's push webhooks for
+# the GitHub copies and brings their pushes to Forgejo (AT-8). Only GitHub calls
+# it, at /github, through the router's WAN 443 and the gateway's public listener,
+# as it reaches Forgejo. The name follows Forgejo's, so it tracks the home WAN IP
+# with no record of its own to keep; its cert is issued through the challenge zone.
+# ============================================================================
+
+resource "azurerm_dns_cname_record" "forgejo_sync" {
+  name                = "forgejo-sync"
+  zone_name           = azurerm_dns_zone.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
+  ttl                 = 300
+  record              = "forgejo.${azurerm_dns_zone.main.name}"
+}
+
+resource "azurerm_dns_cname_record" "forgejo_sync_acme_challenge" {
+  name                = "_acme-challenge.forgejo-sync"
+  zone_name           = azurerm_dns_zone.main.name
+  resource_group_name = data.azurerm_resource_group.main.name
+  ttl                 = 300
+  record              = "forgejo-sync.${azurerm_dns_zone.home_acme.name}"
+}
